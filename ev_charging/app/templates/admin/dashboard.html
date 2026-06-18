@@ -1,0 +1,398 @@
+{% extends "shared/base.html" %}
+{% block title %}Dashboard — EVCharge{% endblock %}
+{% block breadcrumb %}Tableau de bord{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block content %}
+
+<!-- ══ ALERTE CRITIQUE ══ -->
+<div class="alert danger" id="alert-panne" style="display:none">
+  <span class="alert-icon">▲</span>
+  <div class="alert-body">
+    <div class="alert-title" id="alert-panne-text">Borne hors service</div>
+    <div>Intervention technique requise</div>
+  </div>
+  <a href="/admin/alertes" class="alert-action">Voir les alertes →</a>
+</div>
+
+<!-- ══ EN-TÊTE ══ -->
+<div class="page-header">
+  <div>
+    <div class="page-title">Tableau de bord</div>
+    <div class="page-desc">Supervision du réseau · <span class="mono" id="last-refresh">—</span></div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-secondary btn-sm" onclick="refresh()">Actualiser</button>
+    <button class="btn btn-primary btn-sm" onclick="window.location.href='/bornes'">+ Ajouter une borne</button>
+  </div>
+</div>
+
+<!-- ══ KPI ══ -->
+<div class="kpi-grid">
+  <div class="kpi">
+    <div class="kpi-label">Bornes actives</div>
+    <div class="kpi-value mono" id="kpi-total">—</div>
+    <div class="kpi-footer">
+      <span class="kpi-delta up" id="kpi-dispo-delta">—</span>
+      <span>disponibles</span>
+    </div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Sessions en cours</div>
+    <div class="kpi-value mono" id="kpi-occupees">—</div>
+    <div class="kpi-footer">
+      <span>bornes actuellement occupées</span>
+    </div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Hors service</div>
+    <div class="kpi-value mono" id="kpi-pannes" style="color:var(--danger)">—</div>
+    <div class="kpi-footer">
+      <span id="kpi-pannes-detail">panne + maintenance</span>
+    </div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Revenu total</div>
+    <div class="kpi-value mono" id="kpi-revenu">—</div>
+    <div class="kpi-footer">
+      <span class="kpi-delta up" id="kpi-energie">—</span>
+      <span>kWh distribués</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ GRAPHIQUES ══ -->
+<div class="grid-2-1" style="margin-bottom:12px">
+
+  <!-- Chart : Activité horaire -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Activité horaire</div>
+        <div class="card-subtitle">Sessions démarrées par heure — profil journalier type</div>
+      </div>
+    </div>
+    <div class="card-body" style="padding-top:12px">
+      <canvas id="chart-heures" height="130"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart : Répartition statuts -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Statuts réseau</div>
+        <div class="card-subtitle">Répartition en direct</div>
+      </div>
+    </div>
+    <div class="card-body" style="padding-top:8px">
+      <canvas id="chart-statuts" height="160"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Chart : Énergie 7 jours -->
+<div class="card" style="margin-bottom:12px">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Énergie distribuée</div>
+      <div class="card-subtitle">kWh · 7 derniers jours</div>
+    </div>
+    <span class="mono" style="font-size:.75rem;color:var(--text-muted)" id="total-7j">—</span>
+  </div>
+  <div class="card-body" style="padding-top:12px">
+    <canvas id="chart-energie" height="80"></canvas>
+  </div>
+</div>
+
+<!-- ══ ML + TABLE ══ -->
+<div class="grid-3-1" style="margin-bottom:12px;grid-template-columns:1fr 360px">
+
+  <!-- Tableau bornes -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">État des bornes</div>
+      <button class="btn btn-secondary btn-sm" onclick="loadBornes()">↻ Actualiser</button>
+    </div>
+    <table class="data-table" id="tbl-bornes">
+      <thead>
+        <tr>
+          <th>Identifiant</th>
+          <th>Localisation</th>
+          <th>Puissance</th>
+          <th>Tarif</th>
+          <th>Statut</th>
+        </tr>
+      </thead>
+      <tbody id="tbl-bornes-body">
+        <tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted)">Chargement…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Panneau ML -->
+  <div class="ml-panel">
+    <div class="ml-panel-header">
+      <h3>Prédiction IA</h3>
+      <span class="ml-tag">RandomForest</span>
+    </div>
+    <p class="ml-desc">Probabilité d'occupation d'une borne à un créneau donné. Modèle entraîné sur 90 jours.</p>
+
+    <div class="ml-form">
+      <div class="ml-field" style="width:100%">
+        <span class="ml-label">Borne</span>
+        <select class="ml-select" id="ml-borne">
+          <option value="1">A1 — Centre Commercial</option>
+          <option value="2">B2 — Parking Université</option>
+          <option value="3">C3 — Parking Aéroport</option>
+        </select>
+      </div>
+      <div class="ml-field">
+        <span class="ml-label">Heure</span>
+        <select class="ml-select" id="ml-heure">
+          {% for h in range(24) %}
+          <option value="{{ h }}" {% if h == 14 %}selected{% endif %}>{{ '%02d'|format(h) }}:00</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="ml-field">
+        <span class="ml-label">Jour</span>
+        <select class="ml-select" id="ml-jour">
+          <option value="0">Lundi</option>
+          <option value="1" selected>Mardi</option>
+          <option value="2">Mercredi</option>
+          <option value="3">Jeudi</option>
+          <option value="4">Vendredi</option>
+          <option value="5">Samedi</option>
+          <option value="6">Dimanche</option>
+        </select>
+      </div>
+      <div class="ml-field">
+        <span class="ml-label">Mois</span>
+        <select class="ml-select" id="ml-mois">
+          {% for m, nom in [(1,'Jan'),(2,'Fév'),(3,'Mar'),(4,'Avr'),
+                            (5,'Mai'),(6,'Juin'),(7,'Juil'),(8,'Août'),
+                            (9,'Sep'),(10,'Oct'),(11,'Nov'),(12,'Déc')] %}
+          <option value="{{ m }}" {% if m == 6 %}selected{% endif %}>{{ nom }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button class="btn-run" onclick="runML()" style="width:100%;margin-top:4px">Lancer la prédiction</button>
+    </div>
+
+    <div class="ml-result" id="ml-result">
+      <div class="ml-result-verdict" id="ml-verdict">—</div>
+      <div class="ml-meta-row">
+        <span>Occupation : <strong id="ml-proba">—</strong></span>
+        <span>Confiance : <strong id="ml-conf">—</strong></span>
+      </div>
+      <div class="proba-bar"><div class="proba-fill" id="ml-bar" style="width:0"></div></div>
+      <div style="font-size:.6875rem;color:#374151;margin-top:8px">
+        Précision modèle : <span class="mono" id="ml-acc">—</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const TOKEN = localStorage.getItem("access_token") || "";
+const H = { "Content-Type": "application/json", "Authorization": `Bearer ${TOKEN}` };
+
+// ── Chart config commune ──────────────────────────────────────────────────
+Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+Chart.defaults.font.size   = 11;
+Chart.defaults.color       = "#6B7280";
+
+// Chart 1 — Barres activité horaire
+const dataHeures = [2,1,1,0,1,4,9,28,52,43,33,38,58,62,48,37,32,53,67,61,42,27,13,4];
+new Chart(document.getElementById("chart-heures"), {
+  type: "bar",
+  data: {
+    labels: Array.from({length:24}, (_,i) => String(i).padStart(2,"0")+"h"),
+    datasets: [{
+      data: dataHeures,
+      backgroundColor: dataHeures.map(v =>
+        v > 55 ? "#0E7490" : v > 35 ? "#A5F3FC" : "#E0F7FA"
+      ),
+      borderRadius: 3,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+      y: { grid: { color: "#F3F4F6" }, beginAtZero: true, ticks: { font: { size: 10 } } }
+    }
+  }
+});
+
+// Chart 2 — Donut statuts
+const chartStatuts = new Chart(document.getElementById("chart-statuts"), {
+  type: "doughnut",
+  data: {
+    labels: ["Disponible", "Occupée", "En panne", "Maintenance"],
+    datasets: [{
+      data: [2, 1, 1, 0],
+      backgroundColor: ["#15803D","#B45309","#B91C1C","#4B5563"],
+      borderWidth: 2,
+      borderColor: "#fff",
+      hoverOffset: 4,
+    }]
+  },
+  options: {
+    cutout: "70%",
+    plugins: {
+      legend: {
+        position: "bottom",
+        labels: { font: { size: 11 }, padding: 12, usePointStyle: true, pointStyleWidth: 8 }
+      }
+    }
+  }
+});
+
+// Chart 3 — Ligne énergie
+const dataEnergie = [142, 198, 167, 221, 245, 103, 88];
+new Chart(document.getElementById("chart-energie"), {
+  type: "line",
+  data: {
+    labels: ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"],
+    datasets: [{
+      data: dataEnergie,
+      borderColor: "#0E7490",
+      backgroundColor: "rgba(14,116,144,.06)",
+      fill: true, tension: 0.3,
+      pointRadius: 3, pointBackgroundColor: "#0E7490",
+    }]
+  },
+  options: {
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false } },
+      y: { grid: { color: "#F3F4F6" }, beginAtZero: false }
+    }
+  }
+});
+document.getElementById("total-7j").textContent =
+  dataEnergie.reduce((a,b)=>a+b,0).toLocaleString("fr-FR") + " kWh / semaine";
+
+// ── KPI depuis API ────────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const r = await fetch("/admin/stats", { headers: H });
+    if (!r.ok) throw new Error();
+    const d = await r.json();
+
+    document.getElementById("kpi-total").textContent    = d.bornes.total;
+    document.getElementById("kpi-dispo-delta").textContent = d.bornes.disponibles;
+    document.getElementById("kpi-occupees").textContent = d.bornes.occupees;
+    document.getElementById("kpi-pannes").textContent   = d.bornes.en_panne + d.bornes.maintenance;
+    document.getElementById("kpi-revenu").textContent   =
+      d.energie.revenu_total_eur.toLocaleString("fr-FR", {minimumFractionDigits:2}) + " €";
+    document.getElementById("kpi-energie").textContent  = d.energie.total_kwh.toLocaleString("fr-FR");
+    document.getElementById("nb-dispo").textContent     = d.bornes.disponibles;
+
+    if (d.bornes.en_panne > 0) {
+      document.getElementById("alert-panne").style.display = "flex";
+      document.getElementById("alert-panne-text").textContent =
+        `${d.bornes.en_panne} borne(s) hors service détectée(s)`;
+      const el = document.getElementById("nb-alertes");
+      el.textContent = d.bornes.en_panne;
+      el.style.display = "inline";
+    }
+
+    chartStatuts.data.datasets[0].data = [
+      d.bornes.disponibles, d.bornes.occupees, d.bornes.en_panne, d.bornes.maintenance
+    ];
+    chartStatuts.update();
+
+    document.getElementById("last-refresh").textContent =
+      "actualisé à " + new Date().toLocaleTimeString("fr-FR");
+  } catch {
+    // Données démo
+    document.getElementById("kpi-total").textContent    = "3";
+    document.getElementById("kpi-dispo-delta").textContent = "2";
+    document.getElementById("kpi-occupees").textContent = "1";
+    document.getElementById("kpi-pannes").textContent   = "1";
+    document.getElementById("kpi-revenu").textContent   = "2 847,00 €";
+    document.getElementById("kpi-energie").textContent  = "9 490";
+    document.getElementById("last-refresh").textContent = "mode démo";
+    document.getElementById("alert-panne").style.display = "flex";
+    document.getElementById("alert-panne-text").textContent = "1 borne hors service (données démo)";
+  }
+}
+
+// ── Tableau bornes ────────────────────────────────────────────────────────
+async function loadBornes() {
+  const tbody = document.getElementById("tbl-bornes-body");
+  try {
+    const r = await fetch("/api/bornes/", { headers: H });
+    if (!r.ok) throw new Error();
+    const bornes = await r.json();
+    tbody.innerHTML = bornes.map(b => `
+      <tr>
+        <td>
+          <div class="mono" style="font-weight:600;font-size:.8rem">${b.nom.split(' - ')[0]}</div>
+          <div style="font-size:.6875rem;color:var(--text-muted)">${b.nom.split(' - ')[1]||''}</div>
+        </td>
+        <td style="font-size:.75rem;color:var(--text-muted)">${b.ville||'—'}</td>
+        <td><span class="mono" style="font-size:.8rem">${b.puissance_kw} kW</span></td>
+        <td><span class="mono" style="font-size:.8rem">${b.prix_kwh} €/kWh</span></td>
+        <td><span class="status ${b.statut}"><span class="status-dot"></span>${b.statut}</span></td>
+      </tr>
+    `).join("");
+  } catch {
+    tbody.innerHTML = `
+      <tr><td><div class="mono" style="font-weight:600;font-size:.8rem">Borne A1</div><div style="font-size:.6875rem;color:var(--text-muted)">Centre Commercial</div></td><td style="font-size:.75rem;color:var(--text-muted)">Casablanca</td><td><span class="mono" style="font-size:.8rem">22 kW</span></td><td><span class="mono" style="font-size:.8rem">0.30 €/kWh</span></td><td><span class="status disponible"><span class="status-dot"></span>disponible</span></td></tr>
+      <tr><td><div class="mono" style="font-weight:600;font-size:.8rem">Borne B2</div><div style="font-size:.6875rem;color:var(--text-muted)">Parking Université</div></td><td style="font-size:.75rem;color:var(--text-muted)">Casablanca</td><td><span class="mono" style="font-size:.8rem">50 kW</span></td><td><span class="mono" style="font-size:.8rem">0.45 €/kWh</span></td><td><span class="status occupee"><span class="status-dot"></span>occupee</span></td></tr>
+      <tr><td><div class="mono" style="font-weight:600;font-size:.8rem">Borne C3</div><div style="font-size:.6875rem;color:var(--text-muted)">Parking Aéroport</div></td><td style="font-size:.75rem;color:var(--text-muted)">Casablanca</td><td><span class="mono" style="font-size:.8rem">150 kW</span></td><td><span class="mono" style="font-size:.8rem">0.60 €/kWh</span></td><td><span class="status en_panne"><span class="status-dot"></span>en_panne</span></td></tr>
+    `;
+  }
+}
+
+// ── Prédiction ML ────────────────────────────────────────────────────────
+async function runML() {
+  const body = {
+    borne_id:     +document.getElementById("ml-borne").value,
+    heure:        +document.getElementById("ml-heure").value,
+    jour_semaine: +document.getElementById("ml-jour").value,
+    mois:         +document.getElementById("ml-mois").value,
+  };
+  try {
+    const r = await fetch("/api/predict/disponibilite", { method:"POST", headers:H, body:JSON.stringify(body) });
+    const d = await r.json();
+    const result = document.getElementById("ml-result");
+    result.style.display = "block";
+    const occ = d.prediction === "occupee";
+    document.getElementById("ml-verdict").textContent = occ ? "⚠ Borne probablement OCCUPÉE" : "✓ Borne probablement DISPONIBLE";
+    document.getElementById("ml-verdict").className   = "ml-result-verdict " + d.prediction;
+    document.getElementById("ml-proba").textContent   = Math.round(d.probabilite_occupation * 100) + "%";
+    document.getElementById("ml-conf").textContent    = d.confiance;
+    document.getElementById("ml-bar").style.width     = (d.probabilite_occupation * 100) + "%";
+    document.getElementById("ml-acc").textContent     = Math.round((d.modele_accuracy||0)*100) + "%";
+  } catch {
+    document.getElementById("ml-result").style.display = "block";
+    document.getElementById("ml-verdict").textContent  = "Modèle non disponible — python ml/train_model.py";
+    document.getElementById("ml-verdict").className    = "ml-result-verdict";
+  }
+}
+
+function refresh() { loadStats(); loadBornes(); }
+
+// Socket.IO
+try {
+  const s = io();
+  s.on("statut_borne",     () => refresh());
+  s.on("session_demarree", () => loadStats());
+  s.on("session_terminee", () => loadStats());
+} catch {}
+
+// Init
+loadStats();
+loadBornes();
+</script>
+{% endblock %}

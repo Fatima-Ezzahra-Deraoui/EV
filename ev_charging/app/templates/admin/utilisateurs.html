@@ -1,0 +1,120 @@
+{% extends "shared/base.html" %}
+{% block title %}Utilisateurs — EVCharge{% endblock %}
+{% block breadcrumb %}Utilisateurs{% endblock %}
+{% block nav_users %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="page-title">Utilisateurs</div>
+    <div class="page-desc">Comptes enregistrés sur la plateforme</div>
+  </div>
+  <button class="btn btn-secondary btn-sm" onclick="loadUsers()">Actualiser</button>
+</div>
+
+<!-- KPI -->
+<div class="kpi-grid" style="margin-bottom:12px">
+  <div class="kpi">
+    <div class="kpi-label">Total utilisateurs</div>
+    <div class="kpi-value mono" id="kpi-total">—</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Administrateurs</div>
+    <div class="kpi-value mono" id="kpi-admins" style="color:#0E7490">—</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Utilisateurs actifs</div>
+    <div class="kpi-value mono" id="kpi-actifs" style="color:#15803D">—</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Comptes inactifs</div>
+    <div class="kpi-value mono" id="kpi-inactifs" style="color:var(--text-muted)">—</div>
+  </div>
+</div>
+
+<!-- Tableau -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Liste des comptes</div>
+      <div class="card-subtitle">Tous les utilisateurs enregistrés</div>
+    </div>
+  </div>
+  <div class="card-body" style="padding:0">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Identité</th>
+          <th>Email</th>
+          <th>Téléphone</th>
+          <th>Rôle</th>
+          <th>Statut</th>
+          <th>Inscription</th>
+          <th>Dernière connexion</th>
+        </tr>
+      </thead>
+      <tbody id="tbl-body">
+        <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">Chargement…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const TOKEN = localStorage.getItem("access_token") || "";
+const H = { "Content-Type": "application/json", "Authorization": `Bearer ${TOKEN}` };
+
+async function loadUsers() {
+  try {
+    const r = await fetch("/admin/users", { headers: H });
+    if (!r.ok) throw new Error();
+    const data = await r.json();
+    const users = data.users || data;
+
+    document.getElementById("kpi-total").textContent   = users.length;
+    document.getElementById("kpi-admins").textContent  = users.filter(u => u.role === "admin").length;
+    document.getElementById("kpi-actifs").textContent  = users.filter(u => u.actif).length;
+    document.getElementById("kpi-inactifs").textContent = users.filter(u => !u.actif).length;
+
+    document.getElementById("tbl-body").innerHTML = users.map(u => {
+      const inscription = u.date_inscription ? new Date(u.date_inscription).toLocaleDateString("fr-FR") : "—";
+      const derniere    = u.derniere_connexion ? new Date(u.derniere_connexion).toLocaleString("fr-FR", {dateStyle:"short", timeStyle:"short"}) : "Jamais";
+      const roleClass   = u.role === "admin" ? "color:#0E7490;font-weight:600" : "";
+      return `
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0">
+                ${(u.prenom||"?")[0]}${(u.nom||"?")[0]}
+              </div>
+              <div>
+                <div style="font-weight:500;font-size:.8rem">${u.prenom || ""} ${u.nom || ""}</div>
+              </div>
+            </div>
+          </td>
+          <td style="font-size:.8rem">${u.email || "—"}</td>
+          <td style="font-size:.8rem">${u.telephone || "—"}</td>
+          <td><span style="font-size:.75rem;${roleClass}">${u.role || "user"}</span></td>
+          <td>
+            <span class="status ${u.actif ? 'disponible' : ''}">
+              <span class="status-dot"></span>${u.actif ? "Actif" : "Inactif"}
+            </span>
+          </td>
+          <td><span class="mono" style="font-size:.75rem">${inscription}</span></td>
+          <td><span class="mono" style="font-size:.75rem">${derniere}</span></td>
+        </tr>
+      `;
+    }).join("");
+  } catch {
+    document.getElementById("tbl-body").innerHTML =
+      `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--danger)">Erreur de chargement</td></tr>`;
+  }
+}
+
+loadUsers();
+</script>
+{% endblock %}

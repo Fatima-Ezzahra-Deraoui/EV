@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Connexion — EVCharge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --primary:   #0E7490;
+      --primary-h: #0C6480;
+      --text:      #111827;
+      --muted:     #6B7280;
+      --faint:     #9CA3AF;
+      --border:    #E5E7EB;
+      --bg:        #F4F5F7;
+      --surface:   #FFFFFF;
+      --sidebar:   #111827;
+      --danger:    #B91C1C;
+      --danger-bg: #FEF2F2;
+      --font:      'Inter', system-ui, sans-serif;
+      --mono:      'JetBrains Mono', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Panneau gauche ── */
+    .panel-left {
+      width: 420px;
+      flex-shrink: 0;
+      background: var(--sidebar);
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Grille de fond technique */
+    .panel-left::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(14,116,144,.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(14,116,144,.06) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+
+    .left-inner {
+      position: relative; z-index: 1;
+      padding: 36px 36px;
+      display: flex; flex-direction: column;
+      height: 100%;
+    }
+
+    /* Brand */
+    .brand {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 56px;
+    }
+    .brand-icon {
+      width: 30px; height: 30px;
+      background: var(--primary);
+      border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+    .brand-text {
+      font-size: .9375rem; font-weight: 700;
+      color: #F9FAFB; letter-spacing: -.2px;
+    }
+
+    /* Titre gauche */
+    .left-headline {
+      font-size: 1.5rem; font-weight: 700;
+      color: #F9FAFB; line-height: 1.3;
+      letter-spacing: -.4px; margin-bottom: 12px;
+    }
+    .left-sub {
+      font-size: .8125rem; color: #4B5563;
+      line-height: 1.6; margin-bottom: 40px;
+      max-width: 320px;
+    }
+
+    /* Métriques système */
+    .sys-metrics { display: flex; flex-direction: column; gap: 0; }
+    .metric-row {
+      display: flex; align-items: center;
+      padding: 12px 0;
+      border-top: 1px solid #1F2937;
+    }
+    .metric-key {
+      font-family: var(--mono); font-size: .6875rem;
+      color: #4B5563; font-weight: 500;
+      width: 160px; flex-shrink: 0;
+    }
+    .metric-val {
+      font-family: var(--mono); font-size: .75rem;
+      color: #9CA3AF; font-weight: 500;
+    }
+    .metric-val.ok     { color: #34D399; }
+    .metric-val.warn   { color: #FBBF24; }
+    .metric-val.danger { color: #F87171; }
+
+    /* Footer gauche */
+    .left-footer {
+      margin-top: auto; padding-top: 24px;
+      font-size: .6875rem; color: #374151;
+      font-family: var(--mono);
+    }
+
+    /* ── Panneau droit ── */
+    .panel-right {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+    }
+
+    .form-card {
+      width: 100%; max-width: 380px;
+    }
+
+    .form-card-header { margin-bottom: 28px; }
+    .form-card-title {
+      font-size: 1.25rem; font-weight: 700;
+      color: var(--text); letter-spacing: -.3px;
+      margin-bottom: 6px;
+    }
+    .form-card-sub {
+      font-size: .8125rem; color: var(--muted);
+    }
+
+    /* Champs */
+    .field { margin-bottom: 16px; }
+    .field-label {
+      display: block; font-size: .75rem; font-weight: 600;
+      color: var(--text); margin-bottom: 6px;
+    }
+    .field-input-wrap { position: relative; }
+    .field-input {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: .875rem; font-family: var(--font);
+      color: var(--text); background: var(--surface);
+      outline: none;
+      transition: border-color .12s, box-shadow .12s;
+    }
+    .field-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(14,116,144,.1);
+    }
+    .field-input::placeholder { color: var(--faint); }
+
+    /* Séparateur options */
+    .field-row {
+      display: flex; align-items: center;
+      justify-content: space-between; margin-bottom: 20px;
+    }
+    .check-label {
+      display: flex; align-items: center; gap: 7px;
+      font-size: .8125rem; color: var(--muted); cursor: pointer;
+    }
+    .check-label input { accent-color: var(--primary); }
+    .link {
+      font-size: .8125rem; color: var(--primary);
+      font-weight: 500; text-decoration: none;
+    }
+    .link:hover { color: var(--primary-h); text-decoration: underline; }
+
+    /* Bouton submit */
+    .btn-submit {
+      width: 100%; padding: 10px;
+      background: var(--primary); color: #fff;
+      border: none; border-radius: 6px;
+      font-size: .875rem; font-weight: 600;
+      font-family: var(--font); cursor: pointer;
+      transition: background .12s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-submit:hover { background: var(--primary-h); }
+    .btn-submit:disabled { opacity: .6; cursor: not-allowed; }
+
+    /* Spinner minimaliste */
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Erreur */
+    .error-box {
+      margin-top: 14px;
+      padding: 10px 14px;
+      background: var(--danger-bg);
+      border: 1px solid #FECACA;
+      border-radius: 6px;
+      font-size: .8125rem; color: var(--danger);
+      display: none;
+    }
+
+    /* Credentials de démo */
+    .demo-block {
+      margin-top: 24px;
+      padding: 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    .demo-label {
+      font-size: .625rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .8px;
+      color: var(--faint); margin-bottom: 10px;
+    }
+    .demo-row {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .demo-row:last-child { margin-bottom: 0; }
+    .demo-key { font-size: .75rem; color: var(--muted); }
+    .demo-val {
+      font-family: var(--mono); font-size: .75rem;
+      color: var(--text); font-weight: 500;
+    }
+
+    @media (max-width: 768px) {
+      .panel-left { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Panneau gauche — contexte système ── -->
+<div class="panel-left">
+  <div class="left-inner">
+    <div class="brand">
+      <div class="brand-icon">⚡</div>
+      <span class="brand-text">EVCharge</span>
+    </div>
+
+    <h1 class="left-headline">Plateforme de gestion<br>des bornes de recharge</h1>
+    <p class="left-sub">Interface d'exploitation pour la supervision en temps réel des infrastructures de recharge véhicule électrique.</p>
+
+    <div class="sys-metrics">
+      <div class="metric-row">
+        <span class="metric-key">network.status</span>
+        <span class="metric-val ok">OPERATIONAL</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-key">stations.active</span>
+        <span class="metric-val" id="m-stations">3 / 3</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-key">sessions.live</span>
+        <span class="metric-val warn" id="m-sessions">1 en cours</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-key">alerts.open</span>
+        <span class="metric-val danger" id="m-alerts">1 non résolue</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-key">ml.model</span>
+        <span class="metric-val ok">RandomForest · v1.0</span>
+      </div>
+      <div class="metric-row">
+        <span class="metric-key">api.version</span>
+        <span class="metric-val">REST · JWT · Socket.IO</span>
+      </div>
+    </div>
+
+    <div class="left-footer">
+      EVCharge Platform · Stage Bachelor IA &amp; Data Science
+    </div>
+  </div>
+</div>
+
+<!-- ── Panneau droit — formulaire ── -->
+<div class="panel-right">
+  <div class="form-card">
+
+    <div class="form-card-header">
+      <h1 class="form-card-title">Connexion</h1>
+      <p class="form-card-sub">Accédez à l'interface d'exploitation</p>
+    </div>
+
+    <form id="form-login">
+      <div class="field">
+        <label class="field-label">Adresse email</label>
+        <div class="field-input-wrap">
+          <input
+            class="field-input"
+            type="email"
+            id="email"
+            placeholder="you@ev-charging.com"
+            autocomplete="email"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Mot de passe</label>
+        <div class="field-input-wrap">
+          <input
+            class="field-input"
+            type="password"
+            id="password"
+            placeholder="••••••••"
+            autocomplete="current-password"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="field-row">
+        <label class="check-label">
+          <input type="checkbox" id="remember"/> Se souvenir de moi
+        </label>
+        <a href="#" class="link">Mot de passe oublié</a>
+      </div>
+
+      <button type="submit" class="btn-submit" id="btn-login">
+        <span id="btn-label">Se connecter</span>
+        <div class="spinner" id="spinner"></div>
+      </button>
+
+      <div class="error-box" id="error-box">
+        <span id="error-msg">Email ou mot de passe incorrect.</span>
+      </div>
+    </form>
+
+    <div class="demo-block">
+      <div class="demo-label">Accès démo</div>
+      <div class="demo-row">
+        <span class="demo-key">email</span>
+        <span class="demo-val">admin@ev-charging.com</span>
+      </div>
+      <div class="demo-row">
+        <span class="demo-key">password</span>
+        <span class="demo-val">Admin1234!</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+document.getElementById("form-login").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email    = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const btn      = document.getElementById("btn-login");
+  const label    = document.getElementById("btn-label");
+  const spinner  = document.getElementById("spinner");
+  const errorBox = document.getElementById("error-box");
+
+  btn.disabled       = true;
+  label.style.display = "none";
+  spinner.style.display = "block";
+  errorBox.style.display = "none";
+
+  try {
+    const res  = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, mot_de_passe: password })
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      localStorage.setItem("access_token",  data.access_token);
+      localStorage.setItem("refresh_token", data.refresh_token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      window.location.href = data.user.role === "admin"
+        ? "/admin/dashboard"
+        : "/user/dashboard";
+    } else {
+      document.getElementById("error-msg").textContent = data.message || "Identifiants incorrects.";
+      errorBox.style.display = "block";
+      btn.disabled = false;
+      label.style.display = "block";
+      spinner.style.display = "none";
+    }
+  } catch {
+    document.getElementById("error-msg").textContent = "Serveur inaccessible. Vérifiez que Flask est démarré.";
+    errorBox.style.display = "block";
+    btn.disabled = false;
+    label.style.display = "block";
+    spinner.style.display = "none";
+  }
+});
+</script>
+</body>
+</html>

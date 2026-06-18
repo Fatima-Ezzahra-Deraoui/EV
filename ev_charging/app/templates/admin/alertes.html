@@ -1,0 +1,149 @@
+{% extends "shared/base.html" %}
+{% block title %}Alertes — EVCharge{% endblock %}
+{% block breadcrumb %}Alertes{% endblock %}
+{% block nav_alertes %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="page-title">Alertes réseau</div>
+    <div class="page-desc">Bornes nécessitant une intervention · <span class="mono" id="last-refresh">—</span></div>
+  </div>
+  <button class="btn btn-secondary btn-sm" onclick="loadAlertes()">Actualiser</button>
+</div>
+
+<!-- Alertes critiques -->
+<div id="zone-alertes">
+  <div style="text-align:center;padding:32px;color:var(--text-muted)">Chargement…</div>
+</div>
+
+<!-- Tableau toutes bornes hors service -->
+<div class="card" style="margin-top:12px">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Bornes hors service</div>
+      <div class="card-subtitle">En panne et en maintenance</div>
+    </div>
+  </div>
+  <div class="card-body" style="padding:0">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Borne</th>
+          <th>Localisation</th>
+          <th>Puissance</th>
+          <th>Statut</th>
+          <th>Dernière maintenance</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="tbl-body">
+        <tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">Chargement…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const TOKEN = localStorage.getItem("access_token") || "";
+const H = { "Content-Type": "application/json", "Authorization": `Bearer ${TOKEN}` };
+
+async function loadAlertes() {
+  try {
+    const r = await fetch("/api/bornes/", { headers: H });
+    if (!r.ok) throw new Error();
+    const bornes = await r.json();
+    const horsService = bornes.filter(b => b.statut === "en_panne" || b.statut === "maintenance");
+
+    // Zone alertes critiques
+    const zone = document.getElementById("zone-alertes");
+    if (!horsService.length) {
+      zone.innerHTML = `
+        <div class="alert" style="display:flex;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:14px 16px;gap:12px;align-items:center;margin-bottom:12px">
+          <span style="font-size:1rem">✓</span>
+          <div>
+            <div style="font-weight:600;font-size:.85rem;color:#15803D">Réseau opérationnel</div>
+            <div style="font-size:.75rem;color:#166534">Aucune borne hors service détectée</div>
+          </div>
+        </div>`;
+    } else {
+      const pannes = horsService.filter(b => b.statut === "en_panne");
+      zone.innerHTML = pannes.map(b => `
+        <div class="alert danger" style="display:flex;margin-bottom:8px">
+          <span class="alert-icon">▲</span>
+          <div class="alert-body">
+            <div class="alert-title">${b.nom || "Borne #" + b.id} — EN PANNE</div>
+            <div>${b.adresse || "—"}, ${b.ville || ""} · ${b.puissance_kw} kW · ${b.type_connecteur}</div>
+          </div>
+          <button class="alert-action btn btn-sm" onclick="reparer(${b.id})">Marquer réparée →</button>
+        </div>
+      `).join("");
+    }
+
+    // Tableau
+    if (!horsService.length) {
+      document.getElementById("tbl-body").innerHTML =
+        `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">Aucune borne hors service</td></tr>`;
+      return;
+    }
+    document.getElementById("tbl-body").innerHTML = horsService.map(b => {
+      const maintenance = b.derniere_maintenance
+        ? new Date(b.derniere_maintenance).toLocaleDateString("fr-FR")
+        : "Jamais";
+      return `
+        <tr>
+          <td>
+            <div class="mono" style="font-weight:600;font-size:.8rem">${b.nom ? b.nom.split(" - ")[0] : "Borne #" + b.id}</div>
+            <div style="font-size:.6875rem;color:var(--text-muted)">${b.nom ? (b.nom.split(" - ")[1] || "") : ""}</div>
+          </td>
+          <td style="font-size:.8rem">${b.adresse || "—"}<br><span style="color:var(--text-muted);font-size:.7rem">${b.ville || ""}</span></td>
+          <td><span class="mono" style="font-size:.8rem">${b.puissance_kw} kW</span></td>
+          <td><span class="status ${b.statut}"><span class="status-dot"></span>${b.statut}</span></td>
+          <td><span class="mono" style="font-size:.75rem">${maintenance}</span></td>
+          <td>
+            <div style="display:flex;gap:4px">
+              ${b.statut === "en_panne" ? `<button class="btn btn-secondary btn-sm" onclick="reparer(${b.id})" style="font-size:.7rem;padding:3px 8px">Réparer</button>` : ""}
+              <button class="btn btn-secondary btn-sm" onclick="mettreDispo(${b.id})" style="font-size:.7rem;padding:3px 8px">Remettre en service</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    document.getElementById("last-refresh").textContent = "actualisé à " + new Date().toLocaleTimeString("fr-FR");
+  } catch {
+    document.getElementById("tbl-body").innerHTML =
+      `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--danger)">Erreur de chargement</td></tr>`;
+  }
+}
+
+async function reparer(id) {
+  await changerStatut(id, "maintenance");
+}
+
+async function mettreDispo(id) {
+  await changerStatut(id, "disponible");
+}
+
+async function changerStatut(id, statut) {
+  try {
+    const r = await fetch(`/api/bornes/${id}`, {
+      method: "PUT", headers: H, body: JSON.stringify({ statut })
+    });
+    if (r.ok) loadAlertes();
+    else alert("Erreur lors du changement de statut");
+  } catch { alert("Erreur réseau"); }
+}
+
+try {
+  const s = io();
+  s.on("statut_borne", () => loadAlertes());
+} catch {}
+
+loadAlertes();
+</script>
+{% endblock %}

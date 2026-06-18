@@ -1,0 +1,152 @@
+{% extends "shared/base.html" %}
+{% block title %}Sessions — EVCharge{% endblock %}
+{% block breadcrumb %}Sessions{% endblock %}
+{% block nav_sessions %}active{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="page-title">Sessions de recharge</div>
+    <div class="page-desc">Historique complet · <span class="mono" id="last-refresh">—</span></div>
+  </div>
+  <button class="btn btn-secondary btn-sm" onclick="loadSessions()">Actualiser</button>
+</div>
+
+<!-- KPI -->
+<div class="kpi-grid" style="margin-bottom:12px">
+  <div class="kpi">
+    <div class="kpi-label">Sessions totales</div>
+    <div class="kpi-value mono" id="kpi-total">—</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">En cours</div>
+    <div class="kpi-value mono" id="kpi-encours" style="color:#0E7490">—</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Énergie totale</div>
+    <div class="kpi-value mono" id="kpi-energie">—</div>
+    <div class="kpi-footer"><span>kWh distribués</span></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Revenu total</div>
+    <div class="kpi-value mono" id="kpi-revenu">—</div>
+  </div>
+</div>
+
+<!-- Tableau -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Historique des sessions</div>
+      <div class="card-subtitle">Triées par date décroissante</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="filter-statut" class="form-input" style="font-size:.75rem;padding:4px 8px;height:auto" onchange="applyFilter()">
+        <option value="all">Tous statuts</option>
+        <option value="terminee">Terminées</option>
+        <option value="en_cours">En cours</option>
+        <option value="annulee">Annulées</option>
+      </select>
+    </div>
+  </div>
+  <div class="card-body" style="padding:0">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Utilisateur</th>
+          <th>Borne</th>
+          <th>Début</th>
+          <th>Fin</th>
+          <th>Durée</th>
+          <th>Énergie</th>
+          <th>Montant</th>
+          <th>Statut</th>
+        </tr>
+      </thead>
+      <tbody id="tbl-body">
+        <tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted)">Chargement…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const TOKEN = localStorage.getItem("access_token") || "";
+const H = { "Content-Type": "application/json", "Authorization": `Bearer ${TOKEN}` };
+let allSessions = [];
+
+async function loadSessions() {
+  try {
+    const r = await fetch("/api/sessions/historique", { headers: H });
+    if (!r.ok) throw new Error();
+    allSessions = await r.json();
+    updateKPIs();
+    applyFilter();
+    document.getElementById("last-refresh").textContent = "actualisé à " + new Date().toLocaleTimeString("fr-FR");
+  } catch {
+    document.getElementById("tbl-body").innerHTML =
+      `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--danger)">Erreur de chargement</td></tr>`;
+  }
+}
+
+function updateKPIs() {
+  const terminées = allSessions.filter(s => s.statut === "terminee");
+  const enCours   = allSessions.filter(s => s.statut === "en_cours");
+  const energie   = terminées.reduce((a, s) => a + (parseFloat(s.energie_kwh) || 0), 0);
+  const revenu    = terminées.reduce((a, s) => a + (parseFloat(s.montant_eur) || 0), 0);
+
+  document.getElementById("kpi-total").textContent   = allSessions.length;
+  document.getElementById("kpi-encours").textContent = enCours.length;
+  document.getElementById("kpi-energie").textContent = energie.toLocaleString("fr-FR", {maximumFractionDigits:1});
+  document.getElementById("kpi-revenu").textContent  = revenu.toLocaleString("fr-FR", {minimumFractionDigits:2}) + " €";
+}
+
+function applyFilter() {
+  const f = document.getElementById("filter-statut").value;
+  const data = f === "all" ? allSessions : allSessions.filter(s => s.statut === f);
+  renderTable(data);
+}
+
+function renderTable(data) {
+  if (!data.length) {
+    document.getElementById("tbl-body").innerHTML =
+      `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted)">Aucune session trouvée</td></tr>`;
+    return;
+  }
+  document.getElementById("tbl-body").innerHTML = data.map(s => {
+    const debut = s.debut ? new Date(s.debut) : null;
+    const fin   = s.fin   ? new Date(s.fin)   : null;
+    const duree = (debut && fin) ? Math.round((fin - debut) / 60000) + " min" : "—";
+    const debutStr = debut ? debut.toLocaleString("fr-FR", {dateStyle:"short", timeStyle:"short"}) : "—";
+    const finStr   = fin   ? fin.toLocaleString("fr-FR", {dateStyle:"short", timeStyle:"short"})   : "—";
+    const statutClass = s.statut === "terminee" ? "disponible" : s.statut === "en_cours" ? "occupee" : "";
+    return `
+      <tr>
+        <td><span class="mono" style="font-size:.75rem">#${s.id}</span></td>
+        <td style="font-size:.8rem">${s.user_email || "—"}</td>
+        <td style="font-size:.8rem">${s.borne_nom || `Borne #${s.borne_id}`}</td>
+        <td><span class="mono" style="font-size:.75rem">${debutStr}</span></td>
+        <td><span class="mono" style="font-size:.75rem">${finStr}</span></td>
+        <td><span class="mono" style="font-size:.75rem">${duree}</span></td>
+        <td><span class="mono" style="font-size:.75rem">${s.energie_kwh ? parseFloat(s.energie_kwh).toFixed(2) + " kWh" : "—"}</span></td>
+        <td><span class="mono" style="font-size:.75rem">${s.montant_eur ? parseFloat(s.montant_eur).toFixed(2) + " €" : "—"}</span></td>
+        <td><span class="status ${statutClass}"><span class="status-dot"></span>${s.statut}</span></td>
+      </tr>
+    `;
+  }).join("");
+}
+
+try {
+  const s = io();
+  s.on("session_demarree", () => loadSessions());
+  s.on("session_terminee", () => loadSessions());
+} catch {}
+
+loadSessions();
+</script>
+{% endblock %}

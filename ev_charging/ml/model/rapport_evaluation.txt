@@ -1,0 +1,27 @@
+
+RAPPORT D'ÉVALUATION — Modèle de Prédiction de Disponibilité des Bornes
+=========================================================================
+
+Modèle       : RandomForestClassifier
+Features     : ['borne_id', 'heure', 'jour_semaine', 'est_weekend', 'mois']
+Dataset      : 6411 lignes (90 jours × 3 bornes × 24h)
+Train/Test   : 80% / 20%
+
+MÉTRIQUES
+---------
+Accuracy     : 66.9%
+AUC-ROC      : 0.7529
+
+INTERPRÉTATION
+--------------
+- Le modèle prédit si une borne sera occupée à une heure et un jour donnés.
+- Une accuracy > 70% est suffisante pour un système d'aide à la décision.
+- L'AUC-ROC mesure la capacité à discriminer disponible vs occupée.
+
+IMPORTANCE DES FEATURES
+-----------------------
+  heure           : 73.6%
+  jour_semaine    : 9.9%
+  mois            : 9.1%
+  borne_id        : 5.8%
+  est_weekend     : 1.6%

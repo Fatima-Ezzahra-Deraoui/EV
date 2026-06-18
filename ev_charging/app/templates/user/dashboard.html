@@ -1,0 +1,237 @@
+{% extends "shared/base.html" %}
+{% block title %}Espace utilisateur — EVCharge{% endblock %}
+{% block breadcrumb %}Mon espace{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <div class="page-title">Mon espace recharge</div>
+    <div class="page-desc">Bornes disponibles · Démarrage de session · Historique</div>
+  </div>
+</div>
+
+<!-- ══ KPI PERSO ══ -->
+<div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
+  <div class="kpi">
+    <div class="kpi-label">Sessions effectuées</div>
+    <div class="kpi-value mono" id="u-sessions">—</div>
+    <div class="kpi-footer">historique complet</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Énergie consommée</div>
+    <div class="kpi-value mono" id="u-energie">—</div>
+    <div class="kpi-footer">kWh total</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Montant total</div>
+    <div class="kpi-value mono" id="u-cout">—</div>
+    <div class="kpi-footer">en euros</div>
+  </div>
+</div>
+
+<!-- ══ BORNES + HISTORIQUE ══ -->
+<div class="grid-2-1" style="align-items:start">
+
+  <!-- Historique sessions -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">Historique des sessions</div>
+      <button class="btn btn-secondary btn-sm" onclick="loadSessions()">↻</button>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Borne</th>
+          <th>Date</th>
+          <th>Durée</th>
+          <th>Énergie</th>
+          <th>Coût</th>
+          <th>Statut</th>
+        </tr>
+      </thead>
+      <tbody id="tbl-sessions">
+        <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted)">Chargement…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Bornes disponibles -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Bornes du réseau</div>
+        <div class="card-subtitle">Cliquez pour démarrer</div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="loadBornes()">↻</button>
+    </div>
+    <div id="bornes-list" style="padding:0">
+      <!-- Chargé dynamiquement -->
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ MODAL DÉMARRER SESSION ══ -->
+<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px;width:400px;box-shadow:var(--shadow-md)">
+    <div style="font-size:.875rem;font-weight:700;margin-bottom:4px" id="modal-title">Démarrer une session</div>
+    <div style="font-size:.8125rem;color:var(--text-muted);margin-bottom:20px" id="modal-borne">—</div>
+
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:18px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div>
+        <div style="font-size:.625rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted);margin-bottom:4px">Puissance</div>
+        <div class="mono" style="font-weight:700" id="modal-puissance">—</div>
+      </div>
+      <div>
+        <div style="font-size:.625rem;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted);margin-bottom:4px">Tarif</div>
+        <div class="mono" style="font-weight:700" id="modal-tarif">—</div>
+      </div>
+    </div>
+
+    <label style="display:block;font-size:.75rem;font-weight:600;margin-bottom:6px">Méthode d'accès</label>
+    <select id="modal-methode" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);font-size:.875rem;font-family:var(--font);margin-bottom:20px;outline:none;background:var(--surface)">
+      <option value="app">Application mobile</option>
+      <option value="qr_code">QR Code</option>
+      <option value="rfid">Carte RFID</option>
+    </select>
+
+    <div style="display:flex;gap:10px">
+      <button onclick="closeModal()" class="btn btn-secondary" style="flex:1">Annuler</button>
+      <button onclick="startSession()" class="btn btn-primary" style="flex:2">Démarrer la session</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const TOKEN = localStorage.getItem("access_token") || "";
+const H = { "Content-Type":"application/json","Authorization":`Bearer ${TOKEN}` };
+let selectedBorne = null;
+
+// ── Bornes ───────────────────────────────────────────────────────────────
+async function loadBornes() {
+  const list = document.getElementById("bornes-list");
+  try {
+    const r = await fetch("/api/bornes/", { headers: H });
+    if (!r.ok) throw new Error();
+    const bornes = await r.json();
+    list.innerHTML = bornes.map(b => {
+      const dispo = b.statut === "disponible";
+      return `
+        <div onclick="${dispo ? `openModal(${b.id},'${b.nom}',${b.puissance_kw},${b.prix_kwh})` : ''}"
+             style="padding:14px 18px;border-bottom:1px solid var(--border);
+                    display:flex;align-items:center;justify-content:space-between;
+                    cursor:${dispo ? 'pointer' : 'default'};
+                    opacity:${dispo ? '1' : '.55'};
+                    transition:background .12s"
+             onmouseover="${dispo ? "this.style.background='var(--bg)'" : ''}"
+             onmouseout="this.style.background=''">
+          <div>
+            <div style="font-size:.8125rem;font-weight:600;margin-bottom:3px">${b.nom}</div>
+            <div class="mono" style="font-size:.6875rem;color:var(--text-muted)">${b.puissance_kw} kW · ${b.prix_kwh} €/kWh · ${b.type_connecteur}</div>
+          </div>
+          <span class="status ${b.statut}"><span class="status-dot"></span>${b.statut}</span>
+        </div>
+      `;
+    }).join("");
+  } catch {
+    list.innerHTML = `
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="openModal(1,'Borne A1 - Centre Commercial',22,0.30)">
+        <div><div style="font-size:.8125rem;font-weight:600;margin-bottom:3px">Borne A1 - Centre Commercial</div><div class="mono" style="font-size:.6875rem;color:var(--text-muted)">22 kW · 0.30 €/kWh · Type 2</div></div>
+        <span class="status disponible"><span class="status-dot"></span>disponible</span>
+      </div>
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;opacity:.55">
+        <div><div style="font-size:.8125rem;font-weight:600;margin-bottom:3px">Borne B2 - Parking Université</div><div class="mono" style="font-size:.6875rem;color:var(--text-muted)">50 kW · 0.45 €/kWh · CCS Combo</div></div>
+        <span class="status occupee"><span class="status-dot"></span>occupee</span>
+      </div>
+      <div style="padding:14px 18px;display:flex;align-items:center;justify-content:space-between;opacity:.55">
+        <div><div style="font-size:.8125rem;font-weight:600;margin-bottom:3px">Borne C3 - Parking Aéroport</div><div class="mono" style="font-size:.6875rem;color:var(--text-muted)">150 kW · 0.60 €/kWh · CCS Combo</div></div>
+        <span class="status en_panne"><span class="status-dot"></span>en_panne</span>
+      </div>
+    `;
+  }
+}
+
+// ── Sessions ─────────────────────────────────────────────────────────────
+async function loadSessions() {
+  const tbody = document.getElementById("tbl-sessions");
+  try {
+    const r = await fetch("/api/sessions/mes-sessions", { headers: H });
+    if (!r.ok) throw new Error();
+    const data = await r.json();
+
+    if (data.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted)">Aucune session pour le moment.</td></tr>`;
+      document.getElementById("u-sessions").textContent = "0";
+      document.getElementById("u-energie").textContent  = "0 kWh";
+      document.getElementById("u-cout").textContent     = "0,00 €";
+      return;
+    }
+
+    const totE = data.reduce((a,s) => a + (s.energie_kwh||0), 0);
+    const totC = data.reduce((a,s) => a + (s.cout_total||0),  0);
+    document.getElementById("u-sessions").textContent = data.length;
+    document.getElementById("u-energie").textContent  = totE.toFixed(1) + " kWh";
+    document.getElementById("u-cout").textContent     = totC.toFixed(2) + " €";
+
+    tbody.innerHTML = data.slice(0,10).map(s => {
+      const statusMap = { terminee:"disponible", en_cours:"occupee", annulee:"en_panne" };
+      const date = s.debut ? new Date(s.debut).toLocaleString("fr-FR",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}) : "—";
+      return `
+        <tr>
+          <td style="font-size:.8rem;font-weight:600">${s.borne_nom||"—"}</td>
+          <td class="mono" style="font-size:.75rem;color:var(--text-muted)">${date}</td>
+          <td class="mono" style="font-size:.75rem">${s.duree_minutes ? s.duree_minutes+" min" : "—"}</td>
+          <td class="mono" style="font-size:.75rem">${s.energie_kwh ? s.energie_kwh+" kWh" : "—"}</td>
+          <td class="mono" style="font-size:.75rem">${s.cout_total ? s.cout_total+" €" : "—"}</td>
+          <td><span class="status ${statusMap[s.statut]||'maintenance'}"><span class="status-dot"></span>${s.statut}</span></td>
+        </tr>
+      `;
+    }).join("");
+  } catch {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted)">Aucune session pour le moment.</td></tr>`;
+    document.getElementById("u-sessions").textContent = "—";
+    document.getElementById("u-energie").textContent  = "—";
+    document.getElementById("u-cout").textContent     = "—";
+  }
+}
+
+// ── Modal ────────────────────────────────────────────────────────────────
+function openModal(id, nom, puissance, prix) {
+  selectedBorne = id;
+  document.getElementById("modal-borne").textContent    = nom;
+  document.getElementById("modal-puissance").textContent = puissance + " kW";
+  document.getElementById("modal-tarif").textContent    = prix + " €/kWh";
+  document.getElementById("modal").style.display = "flex";
+}
+function closeModal() {
+  document.getElementById("modal").style.display = "none";
+  selectedBorne = null;
+}
+async function startSession() {
+  if (!selectedBorne) return;
+  try {
+    const r = await fetch("/api/sessions/demarrer", {
+      method: "POST", headers: H,
+      body: JSON.stringify({ borne_id: selectedBorne, methode_acces: document.getElementById("modal-methode").value })
+    });
+    const d = await r.json();
+    closeModal();
+    if (r.ok) {
+      alert(`Session #${d.session.id} démarrée.`);
+      loadBornes();
+      loadSessions();
+    } else {
+      alert(d.message);
+    }
+  } catch { alert("Erreur serveur."); }
+}
+
+// Init
+loadBornes();
+loadSessions();
+</script>
+{% endblock %}
