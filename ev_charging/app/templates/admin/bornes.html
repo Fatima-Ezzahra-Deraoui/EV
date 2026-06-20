@@ -5,53 +5,78 @@
 
 {% block content %}
 
+<!-- ══ EN-TÊTE ══ -->
 <div class="page-header">
   <div>
     <div class="page-title">Bornes de recharge</div>
-    <div class="page-desc">Gestion du réseau · <span class="mono" id="last-refresh">—</span></div>
+    <div class="page-desc">Gestion du réseau · <span id="last-refresh">—</span></div>
   </div>
   <div style="display:flex;gap:8px">
-    <button class="btn btn-secondary btn-sm" onclick="loadBornes()">Actualiser</button>
-    <button class="btn btn-primary btn-sm" onclick="showAddModal()">+ Nouvelle borne</button>
+    <button class="btn btn-secondary btn-sm" onclick="loadBornes()">
+      <i data-lucide="refresh-cw" width="13" height="13"></i> Actualiser
+    </button>
+    <button class="btn btn-primary btn-sm" onclick="showAddModal()">
+      <i data-lucide="plus" width="13" height="13"></i> Nouvelle borne
+    </button>
   </div>
 </div>
 
-<!-- Filtres statut -->
+<!-- ══ KPI rapides ══ -->
+<div class="kpi-grid" style="margin-bottom:12px">
+  <div class="kpi">
+    <div class="kpi-header">
+      <span class="kpi-label">Total</span>
+      <div class="kpi-icon kpi-icon-primary">
+        <i data-lucide="zap" width="14" height="14"></i>
+      </div>
+    </div>
+    <div class="kpi-value" id="kpi-total">—</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-header">
+      <span class="kpi-label">Disponibles</span>
+      <div class="kpi-icon kpi-icon-success">
+        <i data-lucide="check-circle" width="14" height="14"></i>
+      </div>
+    </div>
+    <div class="kpi-value" id="kpi-dispo" style="color:#15803D">—</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-header">
+      <span class="kpi-label">Occupées</span>
+      <div class="kpi-icon kpi-icon-warning">
+        <i data-lucide="car" width="14" height="14"></i>
+      </div>
+    </div>
+    <div class="kpi-value" id="kpi-occ" style="color:#B45309">—</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-header">
+      <span class="kpi-label">Hors service</span>
+      <div class="kpi-icon kpi-icon-danger">
+        <i data-lucide="alert-circle" width="14" height="14"></i>
+      </div>
+    </div>
+    <div class="kpi-value" id="kpi-hs" style="color:var(--danger)">—</div>
+  </div>
+</div>
+
+<!-- ══ Filtres statut ══ -->
 <div class="card" style="margin-bottom:12px;padding:12px 16px">
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
     <span style="font-size:.75rem;color:var(--text-muted);font-weight:500">Filtrer :</span>
-    <button class="btn btn-secondary btn-sm filter-btn active" data-filter="all" onclick="setFilter('all',this)">Toutes</button>
-    <button class="btn btn-secondary btn-sm filter-btn" data-filter="disponible" onclick="setFilter('disponible',this)">Disponibles</button>
-    <button class="btn btn-secondary btn-sm filter-btn" data-filter="occupee" onclick="setFilter('occupee',this)">Occupées</button>
-    <button class="btn btn-secondary btn-sm filter-btn" data-filter="en_panne" onclick="setFilter('en_panne',this)">En panne</button>
-    <button class="btn btn-secondary btn-sm filter-btn" data-filter="maintenance" onclick="setFilter('maintenance',this)">Maintenance</button>
-    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-      <span class="mono" style="font-size:.75rem;color:var(--text-muted)" id="count-label">— bornes</span>
+    <button class="btn btn-secondary btn-sm filter-btn active" data-filter="all"         onclick="setFilter('all',this)">Toutes</button>
+    <button class="btn btn-secondary btn-sm filter-btn"        data-filter="disponible"  onclick="setFilter('disponible',this)">Disponibles</button>
+    <button class="btn btn-secondary btn-sm filter-btn"        data-filter="occupee"     onclick="setFilter('occupee',this)">Occupées</button>
+    <button class="btn btn-secondary btn-sm filter-btn"        data-filter="en_panne"    onclick="setFilter('en_panne',this)">En panne</button>
+    <button class="btn btn-secondary btn-sm filter-btn"        data-filter="maintenance" onclick="setFilter('maintenance',this)">Maintenance</button>
+    <div style="margin-left:auto">
+      <span style="font-size:.75rem;color:var(--text-muted)" id="count-label">— bornes</span>
     </div>
   </div>
 </div>
 
-<!-- KPI rapides -->
-<div class="kpi-grid" style="margin-bottom:12px">
-  <div class="kpi">
-    <div class="kpi-label">Total</div>
-    <div class="kpi-value mono" id="kpi-total">—</div>
-  </div>
-  <div class="kpi">
-    <div class="kpi-label">Disponibles</div>
-    <div class="kpi-value mono" id="kpi-dispo" style="color:#15803D">—</div>
-  </div>
-  <div class="kpi">
-    <div class="kpi-label">Occupées</div>
-    <div class="kpi-value mono" id="kpi-occ" style="color:#B45309">—</div>
-  </div>
-  <div class="kpi">
-    <div class="kpi-label">Hors service</div>
-    <div class="kpi-value mono" id="kpi-hs" style="color:var(--danger)">—</div>
-  </div>
-</div>
-
-<!-- Tableau bornes -->
+<!-- ══ Tableau bornes ══ -->
 <div class="card">
   <div class="card-header">
     <div>
@@ -60,7 +85,7 @@
     </div>
   </div>
   <div class="card-body" style="padding:0">
-    <table class="table" id="tbl-bornes">
+    <table class="data-table" id="tbl-bornes">
       <thead>
         <tr>
           <th>Identifiant</th>
@@ -73,70 +98,121 @@
         </tr>
       </thead>
       <tbody id="tbl-body">
-        <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">Chargement…</td></tr>
+        <tr>
+          <td colspan="7">
+            <div class="empty-state">
+              <i data-lucide="loader-2" width="24" height="24" class="spin"></i>
+              <p>Chargement des bornes…</p>
+            </div>
+          </td>
+        </tr>
       </tbody>
     </table>
   </div>
 </div>
 
-<!-- Modal ajout/édition borne -->
-<div id="modal-borne" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;width:480px;max-height:90vh;overflow-y:auto">
-    <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-      <div style="font-weight:600;font-size:.9rem" id="modal-title">Nouvelle borne</div>
-      <button onclick="closeModal()" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:1.1rem">✕</button>
+<!-- ══ MODAL ajout / édition ══ -->
+<div id="modal-borne" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+
+    <!-- Header modal -->
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Nouvelle borne</div>
+      <button class="modal-close" onclick="closeModal()" aria-label="Fermer">
+        <i data-lucide="x" width="16" height="16"></i>
+      </button>
     </div>
-    <div style="padding:24px;display:flex;flex-direction:column;gap:16px">
-      <div>
-        <label style="font-size:.75rem;font-weight:500;color:var(--text-muted);display:block;margin-bottom:6px">Nom de la borne</label>
-        <input type="text" id="f-nom" class="form-input" placeholder="ex: Borne A1 - Centre Commercial" style="width:100%;box-sizing:border-box">
+
+    <!-- Body modal -->
+    <div class="modal-body">
+
+      <div class="form-group">
+        <label class="form-label" for="f-nom">Nom de la borne</label>
+        <input type="text" id="f-nom" class="form-input" placeholder="ex : Borne A1 - Centre Commercial">
       </div>
-      <div>
-        <label style="font-size:.75rem;font-weight:500;color:var(--text-muted);display:block;margin-bottom:6px">Adresse</label>
-        <input type="text" id="f-adresse" class="form-input" placeholder="ex: 12 rue de la Paix" style="width:100%;box-sizing:border-box">
+
+      <div class="form-group">
+        <label class="form-label" for="f-adresse">Adresse</label>
+        <input type="text" id="f-adresse" class="form-input" placeholder="ex : 12 rue de la Paix">
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div>
-          <label style="font-size:.75rem;font-weight:500;color:var(--text-muted);display:block;margin-bottom:6px">Ville</label>
-          <input type="text" id="f-ville" class="form-input" placeholder="Casablanca" style="width:100%;box-sizing:border-box">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="f-ville">Ville</label>
+          <input type="text" id="f-ville" class="form-input" placeholder="Casablanca">
         </div>
-        <div>
-          <label style="font-size:.75rem;font-weight:500;color:var(--text-muted);display:block;margin-bottom:6px">Code postal</label>
-          <input type="text" id="f-cp" class="form-input" placeholder="20000" style="width:100%;box-sizing:border-box">
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div>
-          <label style="font-size:.75rem;font-weight:500;color:var(--text-muted);display:block;margin-bottom:6px">Puissance (kW)</label>
-          <input type="number" id="f-puissance" class="form-input" value="22" style="width:100%;box-sizing:border-box">
-        </div>
-        <div>
-          <label style="font-size:.75rem;font-weight:500;color:var(--text-muted);display:block;margin-bottom:6px">Prix (€/kWh)</label>
-          <input type="number" id="f-prix" class="form-input" value="0.30" step="0.01" style="width:100%;box-sizing:border-box">
+        <div class="form-group">
+          <label class="form-label" for="f-cp">Code postal</label>
+          <input type="text" id="f-cp" class="form-input" placeholder="20000">
         </div>
       </div>
-      <div>
-        <label style="font-size:.75rem;font-weight:500;color:var(--text-muted);display:block;margin-bottom:6px">Type de connecteur</label>
-        <select id="f-connecteur" class="form-input" style="width:100%;box-sizing:border-box">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="f-puissance">Puissance (kW)</label>
+          <input type="number" id="f-puissance" class="form-input" value="22" min="1">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="f-prix">Prix (€/kWh)</label>
+          <input type="number" id="f-prix" class="form-input" value="0.30" step="0.01" min="0">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="f-connecteur">Type de connecteur</label>
+        <select id="f-connecteur" class="form-input">
           <option value="Type2">Type 2</option>
           <option value="CCS">CCS</option>
           <option value="CHAdeMO">CHAdeMO</option>
           <option value="Tesla">Tesla</option>
         </select>
       </div>
-      <div id="f-statut-div">
-        <label style="font-size:.75rem;font-weight:500;color:var(--text-muted);display:block;margin-bottom:6px">Statut</label>
-        <select id="f-statut" class="form-input" style="width:100%;box-sizing:border-box">
+
+      <div class="form-group" id="f-statut-div">
+        <label class="form-label" for="f-statut">Statut initial</label>
+        <select id="f-statut" class="form-input">
           <option value="disponible">Disponible</option>
           <option value="maintenance">Maintenance</option>
           <option value="en_panne">En panne</option>
         </select>
       </div>
-      <div id="modal-error" style="display:none;color:var(--danger);font-size:.8rem;padding:8px 12px;background:#FEF2F2;border-radius:6px;border:1px solid #FECACA"></div>
+
+      <!-- Erreur inline -->
+      <div id="modal-error" class="form-error" style="display:none">
+        <i data-lucide="alert-circle" width="14" height="14"></i>
+        <span id="modal-error-text"></span>
+      </div>
+
     </div>
-    <div style="padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px">
+
+    <!-- Footer modal -->
+    <div class="modal-footer">
       <button class="btn btn-secondary btn-sm" onclick="closeModal()">Annuler</button>
-      <button class="btn btn-primary btn-sm" onclick="saveBorne()" id="btn-save">Enregistrer</button>
+      <button class="btn btn-primary btn-sm" onclick="saveBorne()" id="btn-save">
+        <i data-lucide="save" width="13" height="13"></i> Enregistrer
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ MODAL confirmation changement statut ══ -->
+<div id="modal-statut" class="modal-overlay" style="display:none">
+  <div class="modal-box" style="max-width:360px">
+    <div class="modal-header">
+      <div class="modal-title">Changer le statut</div>
+      <button class="modal-close" onclick="closeStatutModal()" aria-label="Fermer">
+        <i data-lucide="x" width="16" height="16"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.875rem;color:var(--text-muted);margin-bottom:14px" id="statut-desc">
+        Sélectionnez le nouveau statut pour cette borne.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:8px" id="statut-options"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeStatutModal()">Annuler</button>
     </div>
   </div>
 </div>
@@ -147,21 +223,60 @@
 <script>
 const TOKEN = localStorage.getItem("access_token") || "";
 const H = { "Content-Type": "application/json", "Authorization": `Bearer ${TOKEN}` };
-let allBornes = [];
+let allBornes     = [];
 let currentFilter = "all";
-let editId = null;
+let editId        = null;
+let statutTargetId = null;
 
+// ── Helpers ───────────────────────────────────────────────────────────────
+function badgeStatut(statut) {
+  const map = {
+    disponible:  { cls: "badge-disponible",  label: "Disponible"  },
+    occupee:     { cls: "badge-occupee",     label: "Occupée"     },
+    en_panne:    { cls: "badge-panne",       label: "En panne"    },
+    maintenance: { cls: "badge-maintenance", label: "Maintenance" },
+  };
+  const s = map[statut] || { cls: "badge-maintenance", label: statut };
+  return `<span class="badge ${s.cls}"><span class="badge-dot"></span>${s.label}</span>`;
+}
+
+function connecteurBadge(type) {
+  return `<span style="font-size:.72rem;background:var(--bg);border:1px solid var(--border);
+    padding:2px 8px;border-radius:var(--radius-sm);color:var(--text-muted)">${type || "—"}</span>`;
+}
+
+function showError(msg) {
+  const el = document.getElementById("modal-error");
+  document.getElementById("modal-error-text").textContent = msg;
+  el.style.display = "flex";
+  lucide.createIcons();
+}
+function hideError() {
+  document.getElementById("modal-error").style.display = "none";
+}
+
+// ── Chargement ────────────────────────────────────────────────────────────
 async function loadBornes() {
+  const tbody = document.getElementById("tbl-body");
+  tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">
+    <i data-lucide="loader-2" width="22" height="22" class="spin"></i>
+    <p>Chargement…</p></div></td></tr>`;
+  lucide.createIcons();
   try {
     const r = await fetch("/api/bornes/", { headers: H });
     if (!r.ok) throw new Error();
     allBornes = await r.json();
     renderTable();
     updateKPIs();
-    document.getElementById("last-refresh").textContent = "actualisé à " + new Date().toLocaleTimeString("fr-FR");
+    document.getElementById("last-refresh").textContent =
+      "actualisé à " + new Date().toLocaleTimeString("fr-FR");
   } catch {
-    document.getElementById("tbl-body").innerHTML =
-      `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--danger)">Erreur de chargement — vérifiez votre connexion</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">
+      <i data-lucide="wifi-off" width="28" height="28"></i>
+      <p>Impossible de charger les bornes.</p>
+      <button class="btn btn-secondary btn-sm" onclick="loadBornes()" style="margin-top:8px">Réessayer</button>
+    </div></td></tr>`;
+    lucide.createIcons();
   }
 }
 
@@ -169,7 +284,7 @@ function updateKPIs() {
   document.getElementById("kpi-total").textContent = allBornes.length;
   document.getElementById("kpi-dispo").textContent = allBornes.filter(b => b.statut === "disponible").length;
   document.getElementById("kpi-occ").textContent   = allBornes.filter(b => b.statut === "occupee").length;
-  document.getElementById("kpi-hs").textContent    = allBornes.filter(b => b.statut === "en_panne" || b.statut === "maintenance").length;
+  document.getElementById("kpi-hs").textContent    = allBornes.filter(b => ["en_panne","maintenance"].includes(b.statut)).length;
 }
 
 function setFilter(f, btn) {
@@ -180,50 +295,68 @@ function setFilter(f, btn) {
 }
 
 function renderTable() {
-  const data = currentFilter === "all" ? allBornes : allBornes.filter(b => b.statut === currentFilter);
-  document.getElementById("count-label").textContent = `${data.length} borne${data.length > 1 ? "s" : ""}`;
+  const data = currentFilter === "all"
+    ? allBornes
+    : allBornes.filter(b => b.statut === currentFilter);
+  document.getElementById("count-label").textContent =
+    `${data.length} borne${data.length > 1 ? "s" : ""}`;
+
   if (!data.length) {
-    document.getElementById("tbl-body").innerHTML =
-      `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">Aucune borne dans cette catégorie</td></tr>`;
+    document.getElementById("tbl-body").innerHTML = `<tr><td colspan="7">
+      <div class="empty-state">
+        <i data-lucide="search-x" width="28" height="28"></i>
+        <p>Aucune borne dans cette catégorie.</p>
+      </div></td></tr>`;
+    lucide.createIcons();
     return;
   }
+
   document.getElementById("tbl-body").innerHTML = data.map(b => `
     <tr>
       <td>
-        <div class="mono" style="font-weight:600;font-size:.8rem">${b.nom ? b.nom.split(" - ")[0] : "—"}</div>
+        <div style="font-weight:600;font-size:.8rem">${b.nom ? b.nom.split(" - ")[0] : "—"}</div>
         <div style="font-size:.6875rem;color:var(--text-muted)">${b.nom ? (b.nom.split(" - ")[1] || "") : ""}</div>
       </td>
       <td>
         <div style="font-size:.8rem">${b.adresse || "—"}</div>
-        <div style="font-size:.6875rem;color:var(--text-muted)">${b.ville || ""} ${b.code_postal || ""}</div>
+        <div style="font-size:.6875rem;color:var(--text-muted)">${[b.ville, b.code_postal].filter(Boolean).join(" ")}</div>
       </td>
       <td><span class="mono" style="font-size:.8rem">${b.puissance_kw} kW</span></td>
-      <td><span style="font-size:.75rem;background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:4px">${b.type_connecteur || "—"}</span></td>
+      <td>${connecteurBadge(b.type_connecteur)}</td>
       <td><span class="mono" style="font-size:.8rem">${parseFloat(b.prix_kwh).toFixed(2)} €/kWh</span></td>
-      <td><span class="status ${b.statut}"><span class="status-dot"></span>${b.statut}</span></td>
+      <td>${badgeStatut(b.statut)}</td>
       <td>
         <div style="display:flex;gap:4px">
-          <button class="btn btn-secondary btn-sm" onclick="editBorne(${b.id})" style="font-size:.7rem;padding:3px 8px">Modifier</button>
-          <button class="btn btn-secondary btn-sm" onclick="changerStatut(${b.id}, '${b.statut}')" style="font-size:.7rem;padding:3px 8px">Statut</button>
+          <button class="btn btn-secondary btn-sm" onclick="editBorne(${b.id})"
+            style="font-size:.7rem;padding:3px 8px;gap:3px">
+            <i data-lucide="pencil" width="11" height="11"></i> Modifier
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="openStatutModal(${b.id},'${b.statut}')"
+            style="font-size:.7rem;padding:3px 8px;gap:3px">
+            <i data-lucide="toggle-left" width="11" height="11"></i> Statut
+          </button>
         </div>
       </td>
     </tr>
   `).join("");
+  lucide.createIcons();
 }
 
+// ── Modal borne ───────────────────────────────────────────────────────────
 function showAddModal() {
   editId = null;
   document.getElementById("modal-title").textContent = "Nouvelle borne";
-  document.getElementById("f-nom").value = "";
-  document.getElementById("f-adresse").value = "";
-  document.getElementById("f-ville").value = "";
-  document.getElementById("f-cp").value = "";
-  document.getElementById("f-puissance").value = "22";
-  document.getElementById("f-prix").value = "0.30";
+  document.getElementById("btn-save").innerHTML =
+    '<i data-lucide="save" width="13" height="13"></i> Enregistrer';
+  ["f-nom","f-adresse","f-ville","f-cp"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("f-puissance").value  = "22";
+  document.getElementById("f-prix").value       = "0.30";
   document.getElementById("f-connecteur").value = "Type2";
-  document.getElementById("f-statut").value = "disponible";
-  document.getElementById("modal-error").style.display = "none";
+  document.getElementById("f-statut").value     = "disponible";
+  hideError();
   document.getElementById("modal-borne").style.display = "flex";
+  lucide.createIcons();
+  document.getElementById("f-nom").focus();
 }
 
 function editBorne(id) {
@@ -231,77 +364,133 @@ function editBorne(id) {
   if (!b) return;
   editId = id;
   document.getElementById("modal-title").textContent = "Modifier la borne";
-  document.getElementById("f-nom").value = b.nom || "";
-  document.getElementById("f-adresse").value = b.adresse || "";
-  document.getElementById("f-ville").value = b.ville || "";
-  document.getElementById("f-cp").value = b.code_postal || "";
+  document.getElementById("btn-save").innerHTML =
+    '<i data-lucide="save" width="13" height="13"></i> Mettre à jour';
+  document.getElementById("f-nom").value       = b.nom || "";
+  document.getElementById("f-adresse").value   = b.adresse || "";
+  document.getElementById("f-ville").value     = b.ville || "";
+  document.getElementById("f-cp").value        = b.code_postal || "";
   document.getElementById("f-puissance").value = b.puissance_kw || 22;
-  document.getElementById("f-prix").value = b.prix_kwh || 0.30;
+  document.getElementById("f-prix").value      = b.prix_kwh || 0.30;
   document.getElementById("f-connecteur").value = b.type_connecteur || "Type2";
-  document.getElementById("f-statut").value = b.statut || "disponible";
-  document.getElementById("modal-error").style.display = "none";
+  document.getElementById("f-statut").value    = b.statut || "disponible";
+  hideError();
   document.getElementById("modal-borne").style.display = "flex";
-}
-
-async function changerStatut(id, statut_actuel) {
-  const suivant = { disponible: "maintenance", maintenance: "en_panne", en_panne: "disponible", occupee: "disponible" };
-  const nouveau = suivant[statut_actuel] || "disponible";
-  if (!confirm(`Passer la borne en "${nouveau}" ?`)) return;
-  try {
-    const r = await fetch(`/api/bornes/${id}`, {
-      method: "PUT",
-      headers: H,
-      body: JSON.stringify({ statut: nouveau })
-    });
-    if (r.ok) loadBornes();
-    else alert("Erreur lors du changement de statut");
-  } catch { alert("Erreur réseau"); }
+  lucide.createIcons();
 }
 
 async function saveBorne() {
+  hideError();
+  const nom = document.getElementById("f-nom").value.trim();
+  if (!nom) { showError("Le nom de la borne est requis."); return; }
+
   const payload = {
-    nom: document.getElementById("f-nom").value.trim(),
-    adresse: document.getElementById("f-adresse").value.trim(),
-    ville: document.getElementById("f-ville").value.trim(),
-    code_postal: document.getElementById("f-cp").value.trim(),
-    puissance_kw: parseFloat(document.getElementById("f-puissance").value),
-    prix_kwh: parseFloat(document.getElementById("f-prix").value),
+    nom,
+    adresse:         document.getElementById("f-adresse").value.trim(),
+    ville:           document.getElementById("f-ville").value.trim(),
+    code_postal:     document.getElementById("f-cp").value.trim(),
+    puissance_kw:    parseFloat(document.getElementById("f-puissance").value),
+    prix_kwh:        parseFloat(document.getElementById("f-prix").value),
     type_connecteur: document.getElementById("f-connecteur").value,
-    statut: document.getElementById("f-statut").value,
+    statut:          document.getElementById("f-statut").value,
   };
-  if (!payload.nom) {
-    const err = document.getElementById("modal-error");
-    err.textContent = "Le nom de la borne est requis.";
-    err.style.display = "block";
-    return;
-  }
+
+  const btn = document.getElementById("btn-save");
+  btn.disabled = true;
+  btn.innerHTML = '<i data-lucide="loader-2" width="13" height="13" class="spin"></i> Enregistrement…';
+  lucide.createIcons();
+
   try {
-    const url = editId ? `/api/bornes/${editId}` : "/api/bornes/";
+    const url    = editId ? `/api/bornes/${editId}` : "/api/bornes/";
     const method = editId ? "PUT" : "POST";
-    const r = await fetch(url, { method, headers: H, body: JSON.stringify(payload) });
-    if (r.ok) { closeModal(); loadBornes(); }
-    else {
-      const d = await r.json();
-      const err = document.getElementById("modal-error");
-      err.textContent = d.message || "Erreur lors de l'enregistrement.";
-      err.style.display = "block";
+    const r      = await fetch(url, { method, headers: H, body: JSON.stringify(payload) });
+    if (r.ok) {
+      closeModal();
+      loadBornes();
+    } else {
+      const d = await r.json().catch(() => ({}));
+      showError(d.message || "Erreur lors de l'enregistrement.");
     }
   } catch {
-    document.getElementById("modal-error").textContent = "Erreur réseau.";
-    document.getElementById("modal-error").style.display = "block";
+    showError("Erreur réseau. Vérifiez votre connexion.");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i data-lucide="save" width="13" height="13"></i> Enregistrer';
+    lucide.createIcons();
   }
 }
 
 function closeModal() {
   document.getElementById("modal-borne").style.display = "none";
+  editId = null;
 }
 
-// Socket.IO
+// ── Modal changement statut ───────────────────────────────────────────────
+const STATUTS = [
+  { val: "disponible",  label: "Disponible",  cls: "badge-disponible",  icon: "check-circle" },
+  { val: "maintenance", label: "Maintenance", cls: "badge-maintenance", icon: "wrench"        },
+  { val: "en_panne",    label: "En panne",    cls: "badge-panne",       icon: "alert-circle"  },
+];
+
+function openStatutModal(id, statutActuel) {
+  statutTargetId = id;
+  const borne    = allBornes.find(b => b.id === id);
+  document.getElementById("statut-desc").textContent =
+    `Borne : ${borne ? borne.nom : id} — statut actuel : ${statutActuel}`;
+
+  document.getElementById("statut-options").innerHTML = STATUTS
+    .filter(s => s.val !== statutActuel)
+    .map(s => `
+      <button class="btn btn-secondary btn-sm" onclick="appliquerStatut('${s.val}')"
+        style="display:flex;align-items:center;gap:8px;justify-content:flex-start;width:100%;padding:10px 14px">
+        <span class="badge ${s.cls}" style="pointer-events:none">
+          <span class="badge-dot"></span>${s.label}
+        </span>
+      </button>
+    `).join("");
+
+  document.getElementById("modal-statut").style.display = "flex";
+  lucide.createIcons();
+}
+
+async function appliquerStatut(nouveau) {
+  if (!statutTargetId) return;
+  closeStatutModal();
+  try {
+    const r = await fetch(`/api/bornes/${statutTargetId}`, {
+      method: "PUT",
+      headers: H,
+      body: JSON.stringify({ statut: nouveau })
+    });
+    if (r.ok) loadBornes();
+    else alert("Erreur lors du changement de statut.");
+  } catch { alert("Erreur réseau."); }
+}
+
+function closeStatutModal() {
+  document.getElementById("modal-statut").style.display = "none";
+  statutTargetId = null;
+}
+
+// Fermer les modals au clic sur l'overlay
+document.getElementById("modal-borne").addEventListener("click", e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+document.getElementById("modal-statut").addEventListener("click", e => {
+  if (e.target === e.currentTarget) closeStatutModal();
+});
+// Fermer avec Escape
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") { closeModal(); closeStatutModal(); }
+});
+
+// ── Socket.IO ─────────────────────────────────────────────────────────────
 try {
   const s = io();
   s.on("statut_borne", () => loadBornes());
-} catch {}
+} catch(e) {}
 
+// ── Init ──────────────────────────────────────────────────────────────────
 loadBornes();
 </script>
 {% endblock %}

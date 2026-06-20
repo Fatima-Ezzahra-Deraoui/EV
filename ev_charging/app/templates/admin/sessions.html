@@ -5,36 +5,64 @@
 
 {% block content %}
 
+<!-- ══ EN-TÊTE ══ -->
 <div class="page-header">
   <div>
     <div class="page-title">Sessions de recharge</div>
-    <div class="page-desc">Historique complet · <span class="mono" id="last-refresh">—</span></div>
+    <div class="page-desc">Historique complet · <span id="last-refresh">—</span></div>
   </div>
-  <button class="btn btn-secondary btn-sm" onclick="loadSessions()">Actualiser</button>
+  <button class="btn btn-secondary btn-sm" onclick="loadSessions()">
+    <i data-lucide="refresh-cw" width="13" height="13"></i> Actualiser
+  </button>
 </div>
 
-<!-- KPI -->
+<!-- ══ KPI ══ -->
 <div class="kpi-grid" style="margin-bottom:12px">
+
   <div class="kpi">
-    <div class="kpi-label">Sessions totales</div>
-    <div class="kpi-value mono" id="kpi-total">—</div>
+    <div class="kpi-header">
+      <span class="kpi-label">Sessions totales</span>
+      <div class="kpi-icon kpi-icon-primary">
+        <i data-lucide="list" width="14" height="14"></i>
+      </div>
+    </div>
+    <div class="kpi-value" id="kpi-total">—</div>
   </div>
+
   <div class="kpi">
-    <div class="kpi-label">En cours</div>
-    <div class="kpi-value mono" id="kpi-encours" style="color:#0E7490">—</div>
+    <div class="kpi-header">
+      <span class="kpi-label">En cours</span>
+      <div class="kpi-icon kpi-icon-warning">
+        <i data-lucide="activity" width="14" height="14"></i>
+      </div>
+    </div>
+    <div class="kpi-value" id="kpi-encours" style="color:#0E7490">—</div>
   </div>
+
   <div class="kpi">
-    <div class="kpi-label">Énergie totale</div>
-    <div class="kpi-value mono" id="kpi-energie">—</div>
+    <div class="kpi-header">
+      <span class="kpi-label">Énergie totale</span>
+      <div class="kpi-icon kpi-icon-success">
+        <i data-lucide="zap" width="14" height="14"></i>
+      </div>
+    </div>
+    <div class="kpi-value" id="kpi-energie">—</div>
     <div class="kpi-footer"><span>kWh distribués</span></div>
   </div>
+
   <div class="kpi">
-    <div class="kpi-label">Revenu total</div>
-    <div class="kpi-value mono" id="kpi-revenu">—</div>
+    <div class="kpi-header">
+      <span class="kpi-label">Revenu total</span>
+      <div class="kpi-icon kpi-icon-success">
+        <i data-lucide="coins" width="14" height="14"></i>
+      </div>
+    </div>
+    <div class="kpi-value" id="kpi-revenu">—</div>
   </div>
+
 </div>
 
-<!-- Tableau -->
+<!-- ══ Tableau sessions ══ -->
 <div class="card">
   <div class="card-header">
     <div>
@@ -42,16 +70,17 @@
       <div class="card-subtitle">Triées par date décroissante</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
-      <select id="filter-statut" class="form-input" style="font-size:.75rem;padding:4px 8px;height:auto" onchange="applyFilter()">
-        <option value="all">Tous statuts</option>
+      <select id="filter-statut" class="filter-select" onchange="applyFilter()">
+        <option value="all">Tous les statuts</option>
         <option value="terminee">Terminées</option>
         <option value="en_cours">En cours</option>
         <option value="annulee">Annulées</option>
       </select>
+      <span style="font-size:.75rem;color:var(--text-muted)" id="count-label">—</span>
     </div>
   </div>
   <div class="card-body" style="padding:0">
-    <table class="table">
+    <table class="data-table">
       <thead>
         <tr>
           <th>ID</th>
@@ -66,7 +95,14 @@
         </tr>
       </thead>
       <tbody id="tbl-body">
-        <tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted)">Chargement…</td></tr>
+        <tr>
+          <td colspan="9">
+            <div class="empty-state">
+              <i data-lucide="loader-2" width="24" height="24" class="spin"></i>
+              <p>Chargement des sessions…</p>
+            </div>
+          </td>
+        </tr>
       </tbody>
     </table>
   </div>
@@ -80,73 +116,121 @@ const TOKEN = localStorage.getItem("access_token") || "";
 const H = { "Content-Type": "application/json", "Authorization": `Bearer ${TOKEN}` };
 let allSessions = [];
 
+// ── Helpers ───────────────────────────────────────────────────────────────
+function badgeSession(statut) {
+  const map = {
+    terminee: { cls: "badge-disponible",  label: "Terminée"  },
+    en_cours: { cls: "badge-occupee",     label: "En cours"  },
+    annulee:  { cls: "badge-panne",       label: "Annulée"   },
+  };
+  const s = map[statut] || { cls: "badge-maintenance", label: statut };
+  return `<span class="badge ${s.cls}"><span class="badge-dot"></span>${s.label}</span>`;
+}
+
+function formatDate(iso) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
+}
+
+function formatDuree(debut, fin) {
+  if (!debut || !fin) return "—";
+  const diff = Math.round((new Date(fin) - new Date(debut)) / 60000);
+  if (diff < 60) return `${diff} min`;
+  const h = Math.floor(diff / 60), m = diff % 60;
+  return `${h}h${m > 0 ? String(m).padStart(2,"0") : ""}`;
+}
+
+// ── Chargement ────────────────────────────────────────────────────────────
 async function loadSessions() {
+  const tbody = document.getElementById("tbl-body");
+  tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state">
+    <i data-lucide="loader-2" width="22" height="22" class="spin"></i>
+    <p>Chargement…</p></div></td></tr>`;
+  lucide.createIcons();
+
   try {
     const r = await fetch("/api/sessions/historique", { headers: H });
     if (!r.ok) throw new Error();
     allSessions = await r.json();
     updateKPIs();
     applyFilter();
-    document.getElementById("last-refresh").textContent = "actualisé à " + new Date().toLocaleTimeString("fr-FR");
+    document.getElementById("last-refresh").textContent =
+      "actualisé à " + new Date().toLocaleTimeString("fr-FR");
   } catch {
-    document.getElementById("tbl-body").innerHTML =
-      `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--danger)">Erreur de chargement</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state">
+      <i data-lucide="wifi-off" width="28" height="28"></i>
+      <p>Impossible de charger les sessions.</p>
+      <button class="btn btn-secondary btn-sm" onclick="loadSessions()" style="margin-top:8px">Réessayer</button>
+    </div></td></tr>`;
+    lucide.createIcons();
   }
 }
 
+// ── KPIs ──────────────────────────────────────────────────────────────────
 function updateKPIs() {
   const terminées = allSessions.filter(s => s.statut === "terminee");
   const enCours   = allSessions.filter(s => s.statut === "en_cours");
   const energie   = terminées.reduce((a, s) => a + (parseFloat(s.energie_kwh) || 0), 0);
-  const revenu    = terminées.reduce((a, s) => a + (parseFloat(s.montant_eur) || 0), 0);
+  const revenu    = terminées.reduce((a, s) => a + (parseFloat(s.montant_eur)  || 0), 0);
 
   document.getElementById("kpi-total").textContent   = allSessions.length;
   document.getElementById("kpi-encours").textContent = enCours.length;
-  document.getElementById("kpi-energie").textContent = energie.toLocaleString("fr-FR", {maximumFractionDigits:1});
-  document.getElementById("kpi-revenu").textContent  = revenu.toLocaleString("fr-FR", {minimumFractionDigits:2}) + " €";
+  document.getElementById("kpi-energie").textContent =
+    energie.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
+  document.getElementById("kpi-revenu").textContent  =
+    revenu.toLocaleString("fr-FR", { minimumFractionDigits: 2 }) + " €";
 }
 
+// ── Filtre & rendu ────────────────────────────────────────────────────────
 function applyFilter() {
-  const f = document.getElementById("filter-statut").value;
+  const f    = document.getElementById("filter-statut").value;
   const data = f === "all" ? allSessions : allSessions.filter(s => s.statut === f);
+  document.getElementById("count-label").textContent =
+    `${data.length} session${data.length > 1 ? "s" : ""}`;
   renderTable(data);
 }
 
 function renderTable(data) {
+  const tbody = document.getElementById("tbl-body");
   if (!data.length) {
-    document.getElementById("tbl-body").innerHTML =
-      `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted)">Aucune session trouvée</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state">
+      <i data-lucide="search-x" width="28" height="28"></i>
+      <p>Aucune session trouvée pour ce filtre.</p>
+    </div></td></tr>`;
+    lucide.createIcons();
     return;
   }
-  document.getElementById("tbl-body").innerHTML = data.map(s => {
-    const debut = s.debut ? new Date(s.debut) : null;
-    const fin   = s.fin   ? new Date(s.fin)   : null;
-    const duree = (debut && fin) ? Math.round((fin - debut) / 60000) + " min" : "—";
-    const debutStr = debut ? debut.toLocaleString("fr-FR", {dateStyle:"short", timeStyle:"short"}) : "—";
-    const finStr   = fin   ? fin.toLocaleString("fr-FR", {dateStyle:"short", timeStyle:"short"})   : "—";
-    const statutClass = s.statut === "terminee" ? "disponible" : s.statut === "en_cours" ? "occupee" : "";
-    return `
-      <tr>
-        <td><span class="mono" style="font-size:.75rem">#${s.id}</span></td>
-        <td style="font-size:.8rem">${s.user_email || "—"}</td>
-        <td style="font-size:.8rem">${s.borne_nom || `Borne #${s.borne_id}`}</td>
-        <td><span class="mono" style="font-size:.75rem">${debutStr}</span></td>
-        <td><span class="mono" style="font-size:.75rem">${finStr}</span></td>
-        <td><span class="mono" style="font-size:.75rem">${duree}</span></td>
-        <td><span class="mono" style="font-size:.75rem">${s.energie_kwh ? parseFloat(s.energie_kwh).toFixed(2) + " kWh" : "—"}</span></td>
-        <td><span class="mono" style="font-size:.75rem">${s.montant_eur ? parseFloat(s.montant_eur).toFixed(2) + " €" : "—"}</span></td>
-        <td><span class="status ${statutClass}"><span class="status-dot"></span>${s.statut}</span></td>
-      </tr>
-    `;
-  }).join("");
+
+  tbody.innerHTML = data.map(s => `
+    <tr>
+      <td><span class="mono" style="font-size:.75rem;color:var(--text-muted)">#${s.id}</span></td>
+      <td>
+        <div style="font-size:.8rem;font-weight:500">${s.user_email ? s.user_email.split("@")[0] : "—"}</div>
+        <div style="font-size:.68rem;color:var(--text-muted)">${s.user_email ? "@" + s.user_email.split("@")[1] : ""}</div>
+      </td>
+      <td style="font-size:.8rem">${s.borne_nom || `Borne #${s.borne_id}`}</td>
+      <td><span class="mono" style="font-size:.75rem">${formatDate(s.debut)}</span></td>
+      <td><span class="mono" style="font-size:.75rem">${formatDate(s.fin)}</span></td>
+      <td><span class="mono" style="font-size:.75rem">${formatDuree(s.debut, s.fin)}</span></td>
+      <td><span class="mono" style="font-size:.75rem">${s.energie_kwh ? parseFloat(s.energie_kwh).toFixed(2) + " kWh" : "—"}</span></td>
+      <td>
+        <span style="font-weight:600;font-size:.8rem;color:${s.montant_eur ? "var(--text)" : "var(--text-muted)"}">
+          ${s.montant_eur ? parseFloat(s.montant_eur).toLocaleString("fr-FR",{minimumFractionDigits:2}) + " €" : "—"}
+        </span>
+      </td>
+      <td>${badgeSession(s.statut)}</td>
+    </tr>
+  `).join("");
 }
 
+// ── Socket.IO temps réel ──────────────────────────────────────────────────
 try {
   const s = io();
   s.on("session_demarree", () => loadSessions());
   s.on("session_terminee", () => loadSessions());
-} catch {}
+} catch(e) {}
 
+// ── Init ──────────────────────────────────────────────────────────────────
 loadSessions();
 </script>
 {% endblock %}

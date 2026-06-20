@@ -1,39 +1,80 @@
 {% extends "shared/base.html" %}
 {% block title %}Utilisateurs — EVCharge{% endblock %}
 {% block breadcrumb %}Utilisateurs{% endblock %}
-{% block nav_users %}active{% endblock %}
+{% block nav_utilisateurs %}active{% endblock %}
 
 {% block content %}
 
+<!-- ══ EN-TÊTE ══ -->
 <div class="page-header">
   <div>
     <div class="page-title">Utilisateurs</div>
-    <div class="page-desc">Comptes enregistrés sur la plateforme</div>
+    <div class="page-desc">Gestion des comptes · <span id="last-refresh">—</span></div>
   </div>
-  <button class="btn btn-secondary btn-sm" onclick="loadUsers()">Actualiser</button>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-secondary btn-sm" onclick="loadUsers()">
+      <i data-lucide="refresh-cw" width="13" height="13"></i> Actualiser
+    </button>
+    <button class="btn btn-primary btn-sm" onclick="showAddModal()">
+      <i data-lucide="user-plus" width="13" height="13"></i> Nouvel utilisateur
+    </button>
+  </div>
 </div>
 
-<!-- KPI -->
+<!-- ══ KPI ══ -->
 <div class="kpi-grid" style="margin-bottom:12px">
   <div class="kpi">
-    <div class="kpi-label">Total utilisateurs</div>
-    <div class="kpi-value mono" id="kpi-total">—</div>
+    <div class="kpi-header">
+      <span class="kpi-label">Total utilisateurs</span>
+      <div class="kpi-icon kpi-icon-primary">
+        <i data-lucide="users" width="14" height="14"></i>
+      </div>
+    </div>
+    <div class="kpi-value" id="kpi-total">—</div>
   </div>
   <div class="kpi">
-    <div class="kpi-label">Administrateurs</div>
-    <div class="kpi-value mono" id="kpi-admins" style="color:#0E7490">—</div>
+    <div class="kpi-header">
+      <span class="kpi-label">Administrateurs</span>
+      <div class="kpi-icon kpi-icon-warning">
+        <i data-lucide="shield" width="14" height="14"></i>
+      </div>
+    </div>
+    <div class="kpi-value" id="kpi-admins">—</div>
   </div>
   <div class="kpi">
-    <div class="kpi-label">Utilisateurs actifs</div>
-    <div class="kpi-value mono" id="kpi-actifs" style="color:#15803D">—</div>
+    <div class="kpi-header">
+      <span class="kpi-label">Clients</span>
+      <div class="kpi-icon kpi-icon-success">
+        <i data-lucide="user" width="14" height="14"></i>
+      </div>
+    </div>
+    <div class="kpi-value" id="kpi-clients">—</div>
   </div>
   <div class="kpi">
-    <div class="kpi-label">Comptes inactifs</div>
-    <div class="kpi-value mono" id="kpi-inactifs" style="color:var(--text-muted)">—</div>
+    <div class="kpi-header">
+      <span class="kpi-label">Actifs (7 jours)</span>
+      <div class="kpi-icon kpi-icon-primary">
+        <i data-lucide="activity" width="14" height="14"></i>
+      </div>
+    </div>
+    <div class="kpi-value" id="kpi-actifs">—</div>
   </div>
 </div>
 
-<!-- Tableau -->
+<!-- ══ Filtres ══ -->
+<div class="card" style="margin-bottom:12px;padding:12px 16px">
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <span style="font-size:.75rem;color:var(--text-muted);font-weight:500">Rôle :</span>
+    <button class="btn btn-secondary btn-sm filter-btn active" data-filter="all"    onclick="setFilter('all',this)">Tous</button>
+    <button class="btn btn-secondary btn-sm filter-btn"        data-filter="admin"  onclick="setFilter('admin',this)">Administrateurs</button>
+    <button class="btn btn-secondary btn-sm filter-btn"        data-filter="client" onclick="setFilter('client',this)">Clients</button>
+    <div style="margin-left:auto">
+      <span style="font-size:.75rem;color:var(--text-muted)" id="count-label">—</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Tableau ══ -->
 <div class="card">
   <div class="card-header">
     <div>
@@ -42,22 +83,102 @@
     </div>
   </div>
   <div class="card-body" style="padding:0">
-    <table class="table">
+    <table class="data-table">
       <thead>
         <tr>
-          <th>Identité</th>
+          <th>Utilisateur</th>
           <th>Email</th>
-          <th>Téléphone</th>
           <th>Rôle</th>
-          <th>Statut</th>
+          <th>Sessions</th>
           <th>Inscription</th>
-          <th>Dernière connexion</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody id="tbl-body">
-        <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">Chargement…</td></tr>
+        <tr>
+          <td colspan="6">
+            <div class="empty-state">
+              <i data-lucide="loader-2" width="24" height="24" class="spin"></i>
+              <p>Chargement des utilisateurs…</p>
+            </div>
+          </td>
+        </tr>
       </tbody>
     </table>
+  </div>
+</div>
+
+<!-- ══ MODAL ajout / édition ══ -->
+<div id="modal-user" class="modal-overlay" style="display:none">
+  <div class="modal-box" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Nouvel utilisateur</div>
+      <button class="modal-close" onclick="closeModal()" aria-label="Fermer">
+        <i data-lucide="x" width="16" height="16"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label" for="f-nom">Nom complet</label>
+        <input type="text" id="f-nom" class="form-input" placeholder="ex : Fatima Deraoui">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="f-email">Adresse email</label>
+        <input type="email" id="f-email" class="form-input" placeholder="exemple@email.com">
+      </div>
+      <div class="form-group" id="f-password-div">
+        <label class="form-label" for="f-password">Mot de passe</label>
+        <input type="password" id="f-password" class="form-input" placeholder="Minimum 8 caractères">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="f-role">Rôle</label>
+        <select id="f-role" class="form-input">
+          <option value="client">Client</option>
+          <option value="admin">Administrateur</option>
+        </select>
+      </div>
+      <div id="modal-error" class="form-error" style="display:none">
+        <i data-lucide="alert-circle" width="14" height="14"></i>
+        <span id="modal-error-text"></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-primary btn-sm" onclick="saveUser()" id="btn-save">
+        <i data-lucide="save" width="13" height="13"></i> Enregistrer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL confirmation suppression ══ -->
+<div id="modal-delete" class="modal-overlay" style="display:none">
+  <div class="modal-box" style="max-width:360px">
+    <div class="modal-header">
+      <div class="modal-title" style="color:var(--danger)">
+        <i data-lucide="trash-2" width="16" height="16"
+           style="display:inline-block;vertical-align:middle;margin-right:6px"></i>
+        Supprimer le compte
+      </div>
+      <button class="modal-close" onclick="closeDeleteModal()" aria-label="Fermer">
+        <i data-lucide="x" width="16" height="16"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.875rem;color:var(--text-muted)">
+        Vous êtes sur le point de supprimer le compte de
+        <strong id="delete-user-name" style="color:var(--text)">—</strong>.
+        Cette action est irréversible.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary btn-sm" onclick="closeDeleteModal()">Annuler</button>
+      <button class="btn btn-sm" onclick="confirmDelete()"
+        style="background:var(--danger);color:#fff;border:none;padding:6px 14px;
+               border-radius:var(--radius-sm);font-size:.8rem;cursor:pointer;font-weight:500">
+        <i data-lucide="trash-2" width="13" height="13"></i> Supprimer
+      </button>
+    </div>
   </div>
 </div>
 
@@ -66,55 +187,250 @@
 {% block scripts %}
 <script>
 const TOKEN = localStorage.getItem("access_token") || "";
-const H = { "Content-Type": "application/json", "Authorization": `Bearer ${TOKEN}` };
+const H = { "Content-Type": "application/json", "Authorization": "Bearer " + TOKEN };
+let allUsers      = [];
+let currentFilter = "all";
+let editId        = null;
+let deleteId      = null;
 
+// ── Helpers ───────────────────────────────────────────────────────────────
+function badgeRole(role) {
+  if (role === "admin") {
+    return '<span class="badge badge-maintenance" style="gap:4px">'
+         + '<i data-lucide="shield" width="10" height="10"></i> Administrateur</span>';
+  }
+  return '<span class="badge badge-disponible" style="gap:4px">'
+       + '<i data-lucide="user" width="10" height="10"></i> Client</span>';
+}
+
+function initiales(nom) {
+  if (!nom) return "?";
+  return nom.split(" ").map(function(n) { return n[0]; }).join("").toUpperCase().slice(0, 2);
+}
+
+function showError(msg) {
+  var el = document.getElementById("modal-error");
+  document.getElementById("modal-error-text").textContent = msg;
+  el.style.display = "flex";
+  lucide.createIcons();
+}
+function hideError() {
+  document.getElementById("modal-error").style.display = "none";
+}
+
+// ── Chargement ────────────────────────────────────────────────────────────
 async function loadUsers() {
+  var tbody = document.getElementById("tbl-body");
+  tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">'
+    + '<i data-lucide="loader-2" width="22" height="22" class="spin"></i>'
+    + '<p>Chargement...</p></div></td></tr>';
+  lucide.createIcons();
   try {
-    const r = await fetch("/admin/users", { headers: H });
+    var r = await fetch("/api/utilisateurs/", { headers: H });
     if (!r.ok) throw new Error();
-    const data = await r.json();
-    const users = data.users || data;
-
-    document.getElementById("kpi-total").textContent   = users.length;
-    document.getElementById("kpi-admins").textContent  = users.filter(u => u.role === "admin").length;
-    document.getElementById("kpi-actifs").textContent  = users.filter(u => u.actif).length;
-    document.getElementById("kpi-inactifs").textContent = users.filter(u => !u.actif).length;
-
-    document.getElementById("tbl-body").innerHTML = users.map(u => {
-      const inscription = u.date_inscription ? new Date(u.date_inscription).toLocaleDateString("fr-FR") : "—";
-      const derniere    = u.derniere_connexion ? new Date(u.derniere_connexion).toLocaleString("fr-FR", {dateStyle:"short", timeStyle:"short"}) : "Jamais";
-      const roleClass   = u.role === "admin" ? "color:#0E7490;font-weight:600" : "";
-      return `
-        <tr>
-          <td>
-            <div style="display:flex;align-items:center;gap:10px">
-              <div style="width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0">
-                ${(u.prenom||"?")[0]}${(u.nom||"?")[0]}
-              </div>
-              <div>
-                <div style="font-weight:500;font-size:.8rem">${u.prenom || ""} ${u.nom || ""}</div>
-              </div>
-            </div>
-          </td>
-          <td style="font-size:.8rem">${u.email || "—"}</td>
-          <td style="font-size:.8rem">${u.telephone || "—"}</td>
-          <td><span style="font-size:.75rem;${roleClass}">${u.role || "user"}</span></td>
-          <td>
-            <span class="status ${u.actif ? 'disponible' : ''}">
-              <span class="status-dot"></span>${u.actif ? "Actif" : "Inactif"}
-            </span>
-          </td>
-          <td><span class="mono" style="font-size:.75rem">${inscription}</span></td>
-          <td><span class="mono" style="font-size:.75rem">${derniere}</span></td>
-        </tr>
-      `;
-    }).join("");
-  } catch {
-    document.getElementById("tbl-body").innerHTML =
-      `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--danger)">Erreur de chargement</td></tr>`;
+    allUsers = await r.json();
+    updateKPIs();
+    applyFilter();
+    document.getElementById("last-refresh").textContent =
+      "actualisé à " + new Date().toLocaleTimeString("fr-FR");
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">'
+      + '<i data-lucide="wifi-off" width="28" height="28"></i>'
+      + '<p>Impossible de charger les utilisateurs.</p>'
+      + '<button class="btn btn-secondary btn-sm" onclick="loadUsers()" style="margin-top:8px">Réessayer</button>'
+      + '</div></td></tr>';
+    lucide.createIcons();
   }
 }
 
+function updateKPIs() {
+  var admins  = allUsers.filter(function(u) { return u.role === "admin"; });
+  var clients = allUsers.filter(function(u) { return u.role === "client"; });
+  var actifs  = allUsers.filter(function(u) {
+    if (!u.derniere_session) return false;
+    return (Date.now() - new Date(u.derniere_session)) / (1000 * 60 * 60 * 24) <= 7;
+  });
+  document.getElementById("kpi-total").textContent   = allUsers.length;
+  document.getElementById("kpi-admins").textContent  = admins.length;
+  document.getElementById("kpi-clients").textContent = clients.length;
+  document.getElementById("kpi-actifs").textContent  = actifs.length;
+}
+
+// ── Filtre & rendu ────────────────────────────────────────────────────────
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll(".filter-btn").forEach(function(b) { b.classList.remove("active"); });
+  btn.classList.add("active");
+  applyFilter();
+}
+
+function applyFilter() {
+  var data = currentFilter === "all"
+    ? allUsers
+    : allUsers.filter(function(u) { return u.role === currentFilter; });
+  document.getElementById("count-label").textContent =
+    data.length + " utilisateur" + (data.length > 1 ? "s" : "");
+  renderTable(data);
+}
+
+function renderTable(data) {
+  var tbody = document.getElementById("tbl-body");
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">'
+      + '<i data-lucide="search-x" width="28" height="28"></i>'
+      + '<p>Aucun utilisateur dans cette catégorie.</p>'
+      + '</div></td></tr>';
+    lucide.createIcons();
+    return;
+  }
+  var rows = "";
+  data.forEach(function(u) {
+    var inscription = u.date_inscription
+      ? new Date(u.date_inscription).toLocaleDateString("fr-FR") : "—";
+    var nomSafe = (u.nom || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+    rows += "<tr>";
+    rows += "<td><div style='display:flex;align-items:center;gap:10px'>";
+    rows += "<div style='width:32px;height:32px;border-radius:50%;background:var(--primary-light);";
+    rows += "color:var(--primary);display:flex;align-items:center;justify-content:center;";
+    rows += "font-size:.7rem;font-weight:700;flex-shrink:0'>" + initiales(u.nom) + "</div>";
+    rows += "<div><div style='font-weight:600;font-size:.8rem'>" + (u.nom || "—") + "</div>";
+    rows += "<div style='font-size:.68rem;color:var(--text-muted)'>#" + u.id + "</div></div>";
+    rows += "</div></td>";
+    rows += "<td style='font-size:.8rem'>" + (u.email || "—") + "</td>";
+    rows += "<td>" + badgeRole(u.role) + "</td>";
+    rows += "<td><span class='mono' style='font-size:.8rem'>"
+          + (u.nb_sessions != null ? u.nb_sessions : "—") + "</span></td>";
+    rows += "<td><span class='mono' style='font-size:.75rem;color:var(--text-muted)'>"
+          + inscription + "</span></td>";
+    rows += "<td><div style='display:flex;gap:4px'>";
+    rows += "<button class='btn btn-secondary btn-sm' onclick='editUser(" + u.id + ")'";
+    rows += " style='font-size:.7rem;padding:3px 8px;gap:3px'>";
+    rows += "<i data-lucide='pencil' width='11' height='11'></i> Modifier</button>";
+    rows += "<button class='btn btn-secondary btn-sm'";
+    rows += " onclick=\"openDeleteModal(" + u.id + ", '" + nomSafe + "')\"";
+    rows += " style='font-size:.7rem;padding:3px 8px;color:var(--danger);border-color:var(--danger)'>";
+    rows += "<i data-lucide='trash-2' width='11' height='11'></i></button>";
+    rows += "</div></td></tr>";
+  });
+  tbody.innerHTML = rows;
+  lucide.createIcons();
+}
+
+// ── Modal utilisateur ─────────────────────────────────────────────────────
+function showAddModal() {
+  editId = null;
+  document.getElementById("modal-title").textContent = "Nouvel utilisateur";
+  document.getElementById("btn-save").innerHTML =
+    '<i data-lucide="save" width="13" height="13"></i> Enregistrer';
+  document.getElementById("f-password-div").style.display = "block";
+  ["f-nom","f-email","f-password"].forEach(function(id) {
+    document.getElementById(id).value = "";
+  });
+  document.getElementById("f-role").value = "client";
+  hideError();
+  document.getElementById("modal-user").style.display = "flex";
+  lucide.createIcons();
+  document.getElementById("f-nom").focus();
+}
+
+function editUser(id) {
+  var u = allUsers.find(function(x) { return x.id === id; });
+  if (!u) return;
+  editId = id;
+  document.getElementById("modal-title").textContent = "Modifier l'utilisateur";
+  document.getElementById("btn-save").innerHTML =
+    '<i data-lucide="save" width="13" height="13"></i> Mettre à jour';
+  document.getElementById("f-password-div").style.display = "none";
+  document.getElementById("f-nom").value   = u.nom   || "";
+  document.getElementById("f-email").value = u.email || "";
+  document.getElementById("f-role").value  = u.role  || "client";
+  hideError();
+  document.getElementById("modal-user").style.display = "flex";
+  lucide.createIcons();
+}
+
+async function saveUser() {
+  hideError();
+  var nom   = document.getElementById("f-nom").value.trim();
+  var email = document.getElementById("f-email").value.trim();
+  if (!nom)   { showError("Le nom est requis.");            return; }
+  if (!email) { showError("L'adresse email est requise."); return; }
+
+  var payload = { nom: nom, email: email, role: document.getElementById("f-role").value };
+  if (!editId) {
+    var pwd = document.getElementById("f-password").value;
+    if (pwd.length < 8) {
+      showError("Le mot de passe doit contenir au moins 8 caractères.");
+      return;
+    }
+    payload.password = pwd;
+  }
+
+  var btn = document.getElementById("btn-save");
+  btn.disabled = true;
+  btn.innerHTML = '<i data-lucide="loader-2" width="13" height="13" class="spin"></i> Enregistrement...';
+  lucide.createIcons();
+
+  try {
+    var url    = editId ? "/api/utilisateurs/" + editId : "/api/utilisateurs/";
+    var method = editId ? "PUT" : "POST";
+    var r      = await fetch(url, { method: method, headers: H, body: JSON.stringify(payload) });
+    if (r.ok) {
+      closeModal();
+      loadUsers();
+    } else {
+      var d = await r.json().catch(function() { return {}; });
+      showError(d.message || "Erreur lors de l'enregistrement.");
+    }
+  } catch(e) {
+    showError("Erreur réseau. Vérifiez votre connexion.");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i data-lucide="save" width="13" height="13"></i> Enregistrer';
+    lucide.createIcons();
+  }
+}
+
+function closeModal() {
+  document.getElementById("modal-user").style.display = "none";
+  editId = null;
+}
+
+// ── Modal suppression ─────────────────────────────────────────────────────
+function openDeleteModal(id, nom) {
+  deleteId = id;
+  document.getElementById("delete-user-name").textContent = nom || "Utilisateur #" + id;
+  document.getElementById("modal-delete").style.display = "flex";
+  lucide.createIcons();
+}
+
+async function confirmDelete() {
+  if (!deleteId) return;
+  closeDeleteModal();
+  try {
+    var r = await fetch("/api/utilisateurs/" + deleteId, { method: "DELETE", headers: H });
+    if (r.ok) loadUsers();
+    else alert("Erreur lors de la suppression.");
+  } catch(e) { alert("Erreur réseau."); }
+}
+
+function closeDeleteModal() {
+  document.getElementById("modal-delete").style.display = "none";
+  deleteId = null;
+}
+
+// Fermeture overlay + Escape
+document.getElementById("modal-user").addEventListener("click", function(e) {
+  if (e.target === e.currentTarget) closeModal();
+});
+document.getElementById("modal-delete").addEventListener("click", function(e) {
+  if (e.target === e.currentTarget) closeDeleteModal();
+});
+document.addEventListener("keydown", function(e) {
+  if (e.key === "Escape") { closeModal(); closeDeleteModal(); }
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────
 loadUsers();
 </script>
 {% endblock %}

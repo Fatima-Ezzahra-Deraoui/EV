@@ -5,25 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Connexion — EVCharge</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&f[]=plus-jakarta-sans@600,700&display=swap" rel="stylesheet"/>
   <style>
     :root {
-      --primary:   #0E7490;
-      --primary-h: #0C6480;
-      --text:      #111827;
-      --muted:     #6B7280;
-      --faint:     #9CA3AF;
-      --border:    #E5E7EB;
-      --bg:        #F4F5F7;
-      --surface:   #FFFFFF;
-      --sidebar:   #111827;
-      --danger:    #B91C1C;
-      --danger-bg: #FEF2F2;
-      --font:      'Inter', system-ui, sans-serif;
-      --mono:      'JetBrains Mono', monospace;
+      --primary:      #0E7490;
+      --primary-h:    #0C6480;
+      --text:         #111827;
+      --muted:        #6B7280;
+      --faint:        #9CA3AF;
+      --border:       #E5E7EB;
+      --bg:           #F4F5F7;
+      --surface:      #FFFFFF;
+      --danger:       #B91C1C;
+      --danger-bg:    #FEF2F2;
+      --font:         'Satoshi', system-ui, sans-serif;
+      --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { font-size: 14px; }
+    html { font-size: 16px; }
     body {
       font-family: var(--font);
       background: var(--bg);
@@ -34,167 +34,158 @@
 
     /* ── Panneau gauche ── */
     .panel-left {
-      width: 420px;
+      width: 440px;
       flex-shrink: 0;
-      background: var(--sidebar);
-      display: flex;
-      flex-direction: column;
-      padding: 0;
+      background: linear-gradient(160deg, #0c4a6e 0%, #0e7490 55%, #0f766e 100%);
       position: relative;
       overflow: hidden;
     }
-
-    /* Grille de fond technique */
-    .panel-left::before {
-      content: '';
-      position: absolute; inset: 0;
-      background-image:
-        linear-gradient(rgba(14,116,144,.06) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(14,116,144,.06) 1px, transparent 1px);
-      background-size: 28px 28px;
+    .panel-left::after {
+      content: "";
+      position: absolute;
+      width: 340px; height: 340px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.04);
+      bottom: -80px; right: -80px;
+      pointer-events: none;
     }
-
     .left-inner {
       position: relative; z-index: 1;
-      padding: 36px 36px;
+      padding: 40px 36px;
       display: flex; flex-direction: column;
       height: 100%;
     }
-
-    /* Brand */
     .brand {
       display: flex; align-items: center; gap: 10px;
-      margin-bottom: 56px;
+      margin-bottom: 52px;
     }
     .brand-icon {
-      width: 30px; height: 30px;
-      background: var(--primary);
-      border-radius: 4px;
+      width: 34px; height: 34px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 8px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 14px;
     }
     .brand-text {
-      font-size: .9375rem; font-weight: 700;
+      font-size: 1rem; font-weight: 700;
       color: #F9FAFB; letter-spacing: -.2px;
+      font-family: var(--font-heading);
     }
-
-    /* Titre gauche */
     .left-headline {
-      font-size: 1.5rem; font-weight: 700;
-      color: #F9FAFB; line-height: 1.3;
-      letter-spacing: -.4px; margin-bottom: 12px;
+      font-size: 1.625rem; font-weight: 700;
+      color: #F0F9FF; line-height: 1.3;
+      letter-spacing: -.4px; margin-bottom: 14px;
+      font-family: var(--font-heading);
     }
     .left-sub {
-      font-size: .8125rem; color: #4B5563;
-      line-height: 1.6; margin-bottom: 40px;
+      font-size: .875rem; color: rgba(255,255,255,0.5);
+      line-height: 1.7; margin-bottom: 44px;
       max-width: 320px;
     }
-
-    /* Métriques système */
-    .sys-metrics { display: flex; flex-direction: column; gap: 0; }
-    .metric-row {
-      display: flex; align-items: center;
-      padding: 12px 0;
-      border-top: 1px solid #1F2937;
+    .features-list { display: flex; flex-direction: column; gap: 0; }
+    .feature-item {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 16px 0;
+      border-top: 1px solid rgba(255,255,255,0.08);
     }
-    .metric-key {
-      font-family: var(--mono); font-size: .6875rem;
-      color: #4B5563; font-weight: 500;
-      width: 160px; flex-shrink: 0;
+    .feature-icon {
+      width: 40px; height: 40px; flex-shrink: 0;
+      background: rgba(255,255,255,0.12);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
     }
-    .metric-val {
-      font-family: var(--mono); font-size: .75rem;
-      color: #9CA3AF; font-weight: 500;
+    .feature-item h4 {
+      color: #e0f2fe; font-size: .875rem; font-weight: 600;
+      margin-bottom: 3px;
     }
-    .metric-val.ok     { color: #34D399; }
-    .metric-val.warn   { color: #FBBF24; }
-    .metric-val.danger { color: #F87171; }
-
-    /* Footer gauche */
+    .feature-item p {
+      color: rgba(255,255,255,0.45); font-size: .775rem;
+      line-height: 1.5;
+    }
     .left-footer {
-      margin-top: auto; padding-top: 24px;
-      font-size: .6875rem; color: #374151;
-      font-family: var(--mono);
+      margin-top: auto; padding-top: 28px;
+      font-size: .75rem; color: rgba(255,255,255,0.25);
     }
 
     /* ── Panneau droit ── */
     .panel-right {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      flex: 1; display: flex;
+      align-items: center; justify-content: center;
       padding: 40px 24px;
     }
-
-    .form-card {
-      width: 100%; max-width: 380px;
-    }
-
+    .form-card { width: 100%; max-width: 390px; }
     .form-card-header { margin-bottom: 28px; }
     .form-card-title {
-      font-size: 1.25rem; font-weight: 700;
+      font-size: 1.375rem; font-weight: 700;
       color: var(--text); letter-spacing: -.3px;
-      margin-bottom: 6px;
+      margin-bottom: 6px; font-family: var(--font-heading);
     }
-    .form-card-sub {
-      font-size: .8125rem; color: var(--muted);
-    }
+    .form-card-sub { font-size: .875rem; color: var(--muted); line-height: 1.6; }
 
-    /* Champs */
-    .field { margin-bottom: 16px; }
+    .field { margin-bottom: 18px; }
     .field-label {
-      display: block; font-size: .75rem; font-weight: 600;
-      color: var(--text); margin-bottom: 6px;
+      display: block; font-size: .8125rem; font-weight: 600;
+      color: var(--text); margin-bottom: 7px;
     }
     .field-input-wrap { position: relative; }
     .field-input {
-      width: 100%;
-      padding: 9px 12px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: .875rem; font-family: var(--font);
+      width: 100%; padding: 10px 38px 10px 13px;
+      border: 1px solid var(--border); border-radius: 8px;
+      font-size: .9375rem; font-family: var(--font);
       color: var(--text); background: var(--surface);
       outline: none;
-      transition: border-color .12s, box-shadow .12s;
+      transition: border-color .15s, box-shadow .15s;
     }
     .field-input:focus {
       border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(14,116,144,.1);
+      box-shadow: 0 0 0 3px rgba(14,116,144,.12);
     }
     .field-input::placeholder { color: var(--faint); }
+    .field-input.error { border-color: var(--danger); }
 
-    /* Séparateur options */
+    .toggle-pw {
+      position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      color: var(--faint); padding: 2px;
+      display: flex; align-items: center; justify-content: center;
+      transition: color .15s;
+    }
+    .toggle-pw:hover { color: var(--muted); }
+
     .field-row {
       display: flex; align-items: center;
-      justify-content: space-between; margin-bottom: 20px;
+      justify-content: space-between; margin-bottom: 22px;
     }
     .check-label {
       display: flex; align-items: center; gap: 7px;
-      font-size: .8125rem; color: var(--muted); cursor: pointer;
+      font-size: .875rem; color: var(--muted); cursor: pointer;
+      user-select: none;
     }
     .check-label input { accent-color: var(--primary); }
     .link {
-      font-size: .8125rem; color: var(--primary);
+      font-size: .875rem; color: var(--primary);
       font-weight: 500; text-decoration: none;
     }
     .link:hover { color: var(--primary-h); text-decoration: underline; }
 
-    /* Bouton submit */
     .btn-submit {
-      width: 100%; padding: 10px;
+      width: 100%; padding: 11px;
       background: var(--primary); color: #fff;
-      border: none; border-radius: 6px;
-      font-size: .875rem; font-weight: 600;
+      border: none; border-radius: 8px;
+      font-size: .9375rem; font-weight: 600;
       font-family: var(--font); cursor: pointer;
-      transition: background .12s;
+      transition: background .15s, box-shadow .15s, transform .1s;
       display: flex; align-items: center; justify-content: center; gap: 8px;
     }
-    .btn-submit:hover { background: var(--primary-h); }
+    .btn-submit:hover:not(:disabled) {
+      background: var(--primary-h);
+      box-shadow: 0 4px 14px rgba(14,116,144,.25);
+      transform: translateY(-1px);
+    }
+    .btn-submit:active:not(:disabled) { transform: translateY(0); }
     .btn-submit:disabled { opacity: .6; cursor: not-allowed; }
 
-    /* Spinner minimaliste */
     .spinner {
-      width: 14px; height: 14px;
+      width: 15px; height: 15px;
       border: 2px solid rgba(255,255,255,.3);
       border-top-color: #fff;
       border-radius: 50%;
@@ -203,128 +194,137 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Erreur */
     .error-box {
-      margin-top: 14px;
-      padding: 10px 14px;
-      background: var(--danger-bg);
-      border: 1px solid #FECACA;
-      border-radius: 6px;
-      font-size: .8125rem; color: var(--danger);
-      display: none;
+      margin-top: 14px; padding: 11px 14px;
+      background: var(--danger-bg); border: 1px solid #FECACA;
+      border-radius: 8px; font-size: .875rem; color: var(--danger);
+      display: none; align-items: center; gap: 8px;
     }
 
-    /* Credentials de démo */
     .demo-block {
-      margin-top: 24px;
-      padding: 14px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
+      margin-top: 24px; padding: 15px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px;
     }
     .demo-label {
-      font-size: .625rem; font-weight: 700;
+      font-size: .6875rem; font-weight: 700;
       text-transform: uppercase; letter-spacing: .8px;
-      color: var(--faint); margin-bottom: 10px;
+      color: var(--faint); margin-bottom: 12px;
     }
     .demo-row {
       display: flex; align-items: center;
-      justify-content: space-between;
-      margin-bottom: 6px;
+      justify-content: space-between; margin-bottom: 7px;
     }
     .demo-row:last-child { margin-bottom: 0; }
-    .demo-key { font-size: .75rem; color: var(--muted); }
+    .demo-key { font-size: .8125rem; color: var(--muted); }
     .demo-val {
-      font-family: var(--mono); font-size: .75rem;
-      color: var(--text); font-weight: 500;
+      font-size: .8125rem; color: var(--text); font-weight: 600;
+      background: white; padding: 2px 8px;
+      border-radius: 4px; border: 1px solid var(--border);
+      cursor: pointer; transition: background .1s;
+      user-select: all;
     }
+    .demo-val:hover { background: #f0f9ff; }
 
-    @media (max-width: 768px) {
-      .panel-left { display: none; }
-    }
+    @media (max-width: 768px) { .panel-left { display: none; } }
   </style>
 </head>
 <body>
 
-<!-- ── Panneau gauche — contexte système ── -->
+<!-- ── Panneau gauche ── -->
 <div class="panel-left">
   <div class="left-inner">
+
     <div class="brand">
-      <div class="brand-icon">⚡</div>
+      <div class="brand-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+      </div>
       <span class="brand-text">EVCharge</span>
     </div>
 
-    <h1 class="left-headline">Plateforme de gestion<br>des bornes de recharge</h1>
-    <p class="left-sub">Interface d'exploitation pour la supervision en temps réel des infrastructures de recharge véhicule électrique.</p>
+    <h1 class="left-headline">Plateforme de gestion<br>de bornes de recharge</h1>
+    <p class="left-sub">
+      Supervisez votre réseau en temps réel, gérez les sessions de recharge
+      et anticipez la demande grâce à l'intelligence artificielle.
+    </p>
 
-    <div class="sys-metrics">
-      <div class="metric-row">
-        <span class="metric-key">network.status</span>
-        <span class="metric-val ok">OPERATIONAL</span>
+    <div class="features-list">
+      <div class="feature-item">
+        <div class="feature-icon">
+          <i data-lucide="zap" width="18" height="18" color="white"></i>
+        </div>
+        <div>
+          <h4>Supervision en temps réel</h4>
+          <p>Statut de toutes les bornes mis à jour en direct via Socket.IO</p>
+        </div>
       </div>
-      <div class="metric-row">
-        <span class="metric-key">stations.active</span>
-        <span class="metric-val" id="m-stations">3 / 3</span>
+      <div class="feature-item">
+        <div class="feature-icon">
+          <i data-lucide="brain-circuit" width="18" height="18" color="white"></i>
+        </div>
+        <div>
+          <h4>Prédiction intelligente</h4>
+          <p>Modèle Random Forest pour anticiper la disponibilité des bornes</p>
+        </div>
       </div>
-      <div class="metric-row">
-        <span class="metric-key">sessions.live</span>
-        <span class="metric-val warn" id="m-sessions">1 en cours</span>
+      <div class="feature-item">
+        <div class="feature-icon">
+          <i data-lucide="shield-check" width="18" height="18" color="white"></i>
+        </div>
+        <div>
+          <h4>Accès sécurisé JWT</h4>
+          <p>Authentification par token avec gestion des rôles admin / utilisateur</p>
+        </div>
       </div>
-      <div class="metric-row">
-        <span class="metric-key">alerts.open</span>
-        <span class="metric-val danger" id="m-alerts">1 non résolue</span>
-      </div>
-      <div class="metric-row">
-        <span class="metric-key">ml.model</span>
-        <span class="metric-val ok">RandomForest · v1.0</span>
-      </div>
-      <div class="metric-row">
-        <span class="metric-key">api.version</span>
-        <span class="metric-val">REST · JWT · Socket.IO</span>
+      <div class="feature-item">
+        <div class="feature-icon">
+          <i data-lucide="bar-chart-2" width="18" height="18" color="white"></i>
+        </div>
+        <div>
+          <h4>Tableau de bord analytique</h4>
+          <p>Suivi de l'énergie distribuée, des sessions et des revenus en temps réel</p>
+        </div>
       </div>
     </div>
 
     <div class="left-footer">
-      EVCharge Platform · Stage Bachelor IA &amp; Data Science
+      EVCharge Platform &nbsp;·&nbsp; Stage Bachelor IA &amp; Data Science
     </div>
+
   </div>
 </div>
 
-<!-- ── Panneau droit — formulaire ── -->
+<!-- ── Panneau droit ── -->
 <div class="panel-right">
   <div class="form-card">
 
     <div class="form-card-header">
       <h1 class="form-card-title">Connexion</h1>
-      <p class="form-card-sub">Accédez à l'interface d'exploitation</p>
+      <p class="form-card-sub">Bienvenue 👋 Connectez-vous pour accéder au tableau de bord.</p>
     </div>
 
-    <form id="form-login">
+    <form id="form-login" novalidate>
+
       <div class="field">
-        <label class="field-label">Adresse email</label>
+        <label class="field-label" for="email">Adresse email</label>
         <div class="field-input-wrap">
-          <input
-            class="field-input"
-            type="email"
-            id="email"
-            placeholder="you@ev-charging.com"
-            autocomplete="email"
-            required
-          />
+          <input class="field-input" type="email" id="email"
+            placeholder="vous@ev-charging.com"
+            autocomplete="email" required/>
         </div>
       </div>
 
       <div class="field">
-        <label class="field-label">Mot de passe</label>
+        <label class="field-label" for="password">Mot de passe</label>
         <div class="field-input-wrap">
-          <input
-            class="field-input"
-            type="password"
-            id="password"
+          <input class="field-input" type="password" id="password"
             placeholder="••••••••"
-            autocomplete="current-password"
-            required
-          />
+            autocomplete="current-password" required/>
+          <button type="button" class="toggle-pw" id="toggle-pw" aria-label="Afficher le mot de passe">
+            <i data-lucide="eye" width="15" height="15" id="eye-icon"></i>
+          </button>
         </div>
       </div>
 
@@ -332,7 +332,7 @@
         <label class="check-label">
           <input type="checkbox" id="remember"/> Se souvenir de moi
         </label>
-        <a href="#" class="link">Mot de passe oublié</a>
+        <a href="#" class="link">Mot de passe oublié ?</a>
       </div>
 
       <button type="submit" class="btn-submit" id="btn-login">
@@ -341,47 +341,90 @@
       </button>
 
       <div class="error-box" id="error-box">
+        <i data-lucide="alert-circle" width="15" height="15"></i>
         <span id="error-msg">Email ou mot de passe incorrect.</span>
       </div>
+
     </form>
 
     <div class="demo-block">
-      <div class="demo-label">Accès démo</div>
+      <div class="demo-label">Accès démo — cliquez pour remplir</div>
       <div class="demo-row">
-        <span class="demo-key">email</span>
-        <span class="demo-val">admin@ev-charging.com</span>
+        <span class="demo-key">Email</span>
+        <span class="demo-val" onclick="copyAndFill('email', 'admin@ev-charging.com', this)">admin@ev-charging.com</span>
       </div>
       <div class="demo-row">
-        <span class="demo-key">password</span>
-        <span class="demo-val">Admin1234!</span>
+        <span class="demo-key">Mot de passe</span>
+        <span class="demo-val" onclick="copyAndFill('password', 'Admin1234!', this)">Admin1234!</span>
       </div>
     </div>
 
   </div>
 </div>
 
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script>
-document.getElementById("form-login").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const email    = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value;
-  const btn      = document.getElementById("btn-login");
-  const label    = document.getElementById("btn-label");
-  const spinner  = document.getElementById("spinner");
-  const errorBox = document.getElementById("error-box");
+lucide.createIcons();
 
-  btn.disabled       = true;
-  label.style.display = "none";
-  spinner.style.display = "block";
+// ── Toggle mot de passe ───────────────────────────────────────────────────
+var pwVisible = false;
+document.getElementById("toggle-pw").addEventListener("click", function() {
+  pwVisible = !pwVisible;
+  document.getElementById("password").type = pwVisible ? "text" : "password";
+  document.getElementById("eye-icon").setAttribute("data-lucide", pwVisible ? "eye-off" : "eye");
+  lucide.createIcons();
+});
+
+// ── Remplissage démo ──────────────────────────────────────────────────────
+function copyAndFill(fieldId, value, el) {
+  document.getElementById(fieldId).value = value;
+  document.getElementById(fieldId).focus();
+  var orig = el.textContent;
+  el.textContent = "✓ Rempli";
+  setTimeout(function() { el.textContent = orig; }, 1200);
+}
+
+// ── Soumission ────────────────────────────────────────────────────────────
+document.getElementById("form-login").addEventListener("submit", async function(e) {
+  e.preventDefault();
+
+  var email    = document.getElementById("email").value.trim();
+  var password = document.getElementById("password").value;
+  var btn      = document.getElementById("btn-login");
+  var label    = document.getElementById("btn-label");
+  var spinner  = document.getElementById("spinner");
+  var errorBox = document.getElementById("error-box");
+
+  document.getElementById("email").classList.remove("error");
+  document.getElementById("password").classList.remove("error");
   errorBox.style.display = "none";
 
+  if (!email) {
+    document.getElementById("email").classList.add("error");
+    document.getElementById("error-msg").textContent = "Veuillez saisir votre adresse email.";
+    errorBox.style.display = "flex";
+    lucide.createIcons();
+    return;
+  }
+  if (!password) {
+    document.getElementById("password").classList.add("error");
+    document.getElementById("error-msg").textContent = "Veuillez saisir votre mot de passe.";
+    errorBox.style.display = "flex";
+    lucide.createIcons();
+    return;
+  }
+
+  btn.disabled          = true;
+  label.style.display   = "none";
+  spinner.style.display = "block";
+
   try {
-    const res  = await fetch("/api/auth/login", {
+    var res  = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, mot_de_passe: password })
+      body: JSON.stringify({ email: email, mot_de_passe: password })
     });
-    const data = await res.json();
+    var data = await res.json();
 
     if (res.ok) {
       localStorage.setItem("access_token",  data.access_token);
@@ -392,17 +435,19 @@ document.getElementById("form-login").addEventListener("submit", async (e) => {
         : "/user/dashboard";
     } else {
       document.getElementById("error-msg").textContent = data.message || "Identifiants incorrects.";
-      errorBox.style.display = "block";
-      btn.disabled = false;
-      label.style.display = "block";
-      spinner.style.display = "none";
+      errorBox.style.display = "flex";
+      btn.disabled           = false;
+      label.style.display    = "block";
+      spinner.style.display  = "none";
+      lucide.createIcons();
     }
-  } catch {
+  } catch(err) {
     document.getElementById("error-msg").textContent = "Serveur inaccessible. Vérifiez que Flask est démarré.";
-    errorBox.style.display = "block";
-    btn.disabled = false;
-    label.style.display = "block";
-    spinner.style.display = "none";
+    errorBox.style.display = "flex";
+    btn.disabled           = false;
+    label.style.display    = "block";
+    spinner.style.display  = "none";
+    lucide.createIcons();
   }
 });
 </script>

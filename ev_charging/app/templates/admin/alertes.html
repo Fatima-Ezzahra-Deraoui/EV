@@ -5,29 +5,80 @@
 
 {% block content %}
 
+<!-- ══ EN-TÊTE ══ -->
 <div class="page-header">
   <div>
     <div class="page-title">Alertes réseau</div>
-    <div class="page-desc">Bornes nécessitant une intervention · <span class="mono" id="last-refresh">—</span></div>
+    <div class="page-desc">Bornes nécessitant une intervention · <span id="last-refresh">—</span></div>
   </div>
-  <button class="btn btn-secondary btn-sm" onclick="loadAlertes()">Actualiser</button>
+  <button class="btn btn-secondary btn-sm" onclick="loadAlertes()">
+    <i data-lucide="refresh-cw" width="13" height="13"></i> Actualiser
+  </button>
 </div>
 
-<!-- Alertes critiques -->
-<div id="zone-alertes">
-  <div style="text-align:center;padding:32px;color:var(--text-muted)">Chargement…</div>
+<!-- ══ KPI rapides ══ -->
+<div class="kpi-grid" style="margin-bottom:12px">
+  <div class="kpi">
+    <div class="kpi-header">
+      <span class="kpi-label">En panne</span>
+      <div class="kpi-icon kpi-icon-danger">
+        <i data-lucide="alert-circle" width="14" height="14"></i>
+      </div>
+    </div>
+    <div class="kpi-value" id="kpi-panne" style="color:var(--danger)">—</div>
+    <div class="kpi-footer"><span>intervention urgente</span></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-header">
+      <span class="kpi-label">En maintenance</span>
+      <div class="kpi-icon kpi-icon-warning">
+        <i data-lucide="wrench" width="14" height="14"></i>
+      </div>
+    </div>
+    <div class="kpi-value" id="kpi-maintenance" style="color:#7c3aed">—</div>
+    <div class="kpi-footer"><span>en cours de traitement</span></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-header">
+      <span class="kpi-label">Disponibles</span>
+      <div class="kpi-icon kpi-icon-success">
+        <i data-lucide="check-circle" width="14" height="14"></i>
+      </div>
+    </div>
+    <div class="kpi-value" id="kpi-dispo" style="color:#15803D">—</div>
+    <div class="kpi-footer"><span>bornes opérationnelles</span></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-header">
+      <span class="kpi-label">Taux disponibilité</span>
+      <div class="kpi-icon kpi-icon-primary">
+        <i data-lucide="gauge" width="14" height="14"></i>
+      </div>
+    </div>
+    <div class="kpi-value" id="kpi-taux">—</div>
+    <div class="kpi-footer"><span>du réseau actif</span></div>
+  </div>
 </div>
 
-<!-- Tableau toutes bornes hors service -->
-<div class="card" style="margin-top:12px">
+<!-- ══ Zone alertes critiques ══ -->
+<div id="zone-alertes" style="margin-bottom:12px">
+  <div class="empty-state" style="padding:20px 0">
+    <i data-lucide="loader-2" width="22" height="22" class="spin"></i>
+    <p>Vérification du réseau…</p>
+  </div>
+</div>
+
+<!-- ══ Tableau bornes hors service ══ -->
+<div class="card">
   <div class="card-header">
     <div>
       <div class="card-title">Bornes hors service</div>
       <div class="card-subtitle">En panne et en maintenance</div>
     </div>
+    <span style="font-size:.75rem;color:var(--text-muted)" id="count-label">—</span>
   </div>
   <div class="card-body" style="padding:0">
-    <table class="table">
+    <table class="data-table">
       <thead>
         <tr>
           <th>Borne</th>
@@ -39,7 +90,14 @@
         </tr>
       </thead>
       <tbody id="tbl-body">
-        <tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">Chargement…</td></tr>
+        <tr>
+          <td colspan="6">
+            <div class="empty-state">
+              <i data-lucide="loader-2" width="24" height="24" class="spin"></i>
+              <p>Chargement…</p>
+            </div>
+          </td>
+        </tr>
       </tbody>
     </table>
   </div>
@@ -52,82 +110,154 @@
 const TOKEN = localStorage.getItem("access_token") || "";
 const H = { "Content-Type": "application/json", "Authorization": `Bearer ${TOKEN}` };
 
+function badgeStatut(statut) {
+  const map = {
+    disponible:  { cls: "badge-disponible",  label: "Disponible"  },
+    occupee:     { cls: "badge-occupee",     label: "Occupée"     },
+    en_panne:    { cls: "badge-panne",       label: "En panne"    },
+    maintenance: { cls: "badge-maintenance", label: "Maintenance" },
+  };
+  const s = map[statut] || { cls: "badge-maintenance", label: statut };
+  return `<span class="badge ${s.cls}"><span class="badge-dot"></span>${s.label}</span>`;
+}
+
 async function loadAlertes() {
   try {
     const r = await fetch("/api/bornes/", { headers: H });
     if (!r.ok) throw new Error();
-    const bornes = await r.json();
-    const horsService = bornes.filter(b => b.statut === "en_panne" || b.statut === "maintenance");
+    const bornes       = await r.json();
+    const horsService  = bornes.filter(b => ["en_panne","maintenance"].includes(b.statut));
+    const pannes       = bornes.filter(b => b.statut === "en_panne");
+    const maintenances = bornes.filter(b => b.statut === "maintenance");
+    const disponibles  = bornes.filter(b => b.statut === "disponible");
+    const taux         = bornes.length ? Math.round((disponibles.length / bornes.length) * 100) : 0;
 
-    // Zone alertes critiques
-    const zone = document.getElementById("zone-alertes");
-    if (!horsService.length) {
-      zone.innerHTML = `
-        <div class="alert" style="display:flex;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:14px 16px;gap:12px;align-items:center;margin-bottom:12px">
-          <span style="font-size:1rem">✓</span>
-          <div>
-            <div style="font-weight:600;font-size:.85rem;color:#15803D">Réseau opérationnel</div>
-            <div style="font-size:.75rem;color:#166534">Aucune borne hors service détectée</div>
-          </div>
-        </div>`;
-    } else {
-      const pannes = horsService.filter(b => b.statut === "en_panne");
-      zone.innerHTML = pannes.map(b => `
-        <div class="alert danger" style="display:flex;margin-bottom:8px">
-          <span class="alert-icon">▲</span>
-          <div class="alert-body">
-            <div class="alert-title">${b.nom || "Borne #" + b.id} — EN PANNE</div>
-            <div>${b.adresse || "—"}, ${b.ville || ""} · ${b.puissance_kw} kW · ${b.type_connecteur}</div>
-          </div>
-          <button class="alert-action btn btn-sm" onclick="reparer(${b.id})">Marquer réparée →</button>
-        </div>
-      `).join("");
+    document.getElementById("kpi-panne").textContent       = pannes.length;
+    document.getElementById("kpi-maintenance").textContent = maintenances.length;
+    document.getElementById("kpi-dispo").textContent       = disponibles.length;
+    document.getElementById("kpi-taux").textContent        = taux + " %";
+
+    renderAlertes(pannes, maintenances);
+    renderTable(horsService);
+
+    document.getElementById("last-refresh").textContent =
+      "actualisé à " + new Date().toLocaleTimeString("fr-FR");
+
+    const nbEl = document.getElementById("nb-alertes");
+    if (nbEl) {
+      nbEl.textContent    = pannes.length;
+      nbEl.style.display  = pannes.length > 0 ? "inline" : "none";
     }
-
-    // Tableau
-    if (!horsService.length) {
-      document.getElementById("tbl-body").innerHTML =
-        `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">Aucune borne hors service</td></tr>`;
-      return;
-    }
-    document.getElementById("tbl-body").innerHTML = horsService.map(b => {
-      const maintenance = b.derniere_maintenance
-        ? new Date(b.derniere_maintenance).toLocaleDateString("fr-FR")
-        : "Jamais";
-      return `
-        <tr>
-          <td>
-            <div class="mono" style="font-weight:600;font-size:.8rem">${b.nom ? b.nom.split(" - ")[0] : "Borne #" + b.id}</div>
-            <div style="font-size:.6875rem;color:var(--text-muted)">${b.nom ? (b.nom.split(" - ")[1] || "") : ""}</div>
-          </td>
-          <td style="font-size:.8rem">${b.adresse || "—"}<br><span style="color:var(--text-muted);font-size:.7rem">${b.ville || ""}</span></td>
-          <td><span class="mono" style="font-size:.8rem">${b.puissance_kw} kW</span></td>
-          <td><span class="status ${b.statut}"><span class="status-dot"></span>${b.statut}</span></td>
-          <td><span class="mono" style="font-size:.75rem">${maintenance}</span></td>
-          <td>
-            <div style="display:flex;gap:4px">
-              ${b.statut === "en_panne" ? `<button class="btn btn-secondary btn-sm" onclick="reparer(${b.id})" style="font-size:.7rem;padding:3px 8px">Réparer</button>` : ""}
-              <button class="btn btn-secondary btn-sm" onclick="mettreDispo(${b.id})" style="font-size:.7rem;padding:3px 8px">Remettre en service</button>
-            </div>
-          </td>
-        </tr>
-      `;
-    }).join("");
-
-    document.getElementById("last-refresh").textContent = "actualisé à " + new Date().toLocaleTimeString("fr-FR");
   } catch {
-    document.getElementById("tbl-body").innerHTML =
-      `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--danger)">Erreur de chargement</td></tr>`;
+    document.getElementById("zone-alertes").innerHTML = "";
+    document.getElementById("tbl-body").innerHTML = `<tr><td colspan="6">
+      <div class="empty-state">
+        <i data-lucide="wifi-off" width="28" height="28"></i>
+        <p>Impossible de charger les alertes.</p>
+        <button class="btn btn-secondary btn-sm" onclick="loadAlertes()" style="margin-top:8px">Réessayer</button>
+      </div></td></tr>`;
+    lucide.createIcons();
   }
 }
 
-async function reparer(id) {
-  await changerStatut(id, "maintenance");
+function renderAlertes(pannes, maintenances) {
+  const zone = document.getElementById("zone-alertes");
+  if (!pannes.length && !maintenances.length) {
+    zone.innerHTML = `
+      <div class="alert" style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;
+        padding:14px 16px;display:flex;gap:12px;align-items:center">
+        <div class="alert-icon" style="color:#15803D">
+          <i data-lucide="check-circle" width="18" height="18"></i>
+        </div>
+        <div class="alert-body">
+          <div class="alert-title" style="color:#15803D">Réseau entièrement opérationnel</div>
+          <div style="color:#166534">Aucune borne hors service détectée pour le moment.</div>
+        </div>
+      </div>`;
+    lucide.createIcons();
+    return;
+  }
+  zone.innerHTML =
+    pannes.map(b => `
+      <div class="alert danger" style="display:flex;margin-bottom:8px">
+        <div class="alert-icon">
+          <i data-lucide="alert-triangle" width="16" height="16"></i>
+        </div>
+        <div class="alert-body">
+          <div class="alert-title">${b.nom || "Borne #" + b.id} — En panne</div>
+          <div>${[b.adresse, b.ville].filter(Boolean).join(", ")} · ${b.puissance_kw} kW · ${b.type_connecteur || "—"}</div>
+        </div>
+        <button class="alert-action" onclick="reparer(${b.id})">
+          <i data-lucide="wrench" width="13" height="13"></i> Mettre en maintenance →
+        </button>
+      </div>`).join("") +
+    maintenances.map(b => `
+      <div class="alert warning" style="display:flex;margin-bottom:8px">
+        <div class="alert-icon" style="color:#B45309">
+          <i data-lucide="wrench" width="16" height="16"></i>
+        </div>
+        <div class="alert-body">
+          <div class="alert-title" style="color:#92400E">${b.nom || "Borne #" + b.id} — En maintenance</div>
+          <div>${[b.adresse, b.ville].filter(Boolean).join(", ")} · ${b.puissance_kw} kW</div>
+        </div>
+        <button class="alert-action" onclick="mettreDispo(${b.id})">
+          <i data-lucide="check-circle" width="13" height="13"></i> Remettre en service →
+        </button>
+      </div>`).join("");
+  lucide.createIcons();
 }
 
-async function mettreDispo(id) {
-  await changerStatut(id, "disponible");
+function renderTable(horsService) {
+  const tbody = document.getElementById("tbl-body");
+  document.getElementById("count-label").textContent =
+    `${horsService.length} borne${horsService.length > 1 ? "s" : ""}`;
+
+  if (!horsService.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">
+      <i data-lucide="check-circle-2" width="28" height="28" style="color:#15803D"></i>
+      <p>Aucune borne hors service — réseau nominal.</p>
+    </div></td></tr>`;
+    lucide.createIcons();
+    return;
+  }
+
+  tbody.innerHTML = horsService.map(b => {
+    const maintenance = b.derniere_maintenance
+      ? new Date(b.derniere_maintenance).toLocaleDateString("fr-FR")
+      : "Jamais";
+    return `
+      <tr>
+        <td>
+          <div style="font-weight:600;font-size:.8rem">${b.nom ? b.nom.split(" - ")[0] : "Borne #" + b.id}</div>
+          <div style="font-size:.6875rem;color:var(--text-muted)">${b.nom ? (b.nom.split(" - ")[1] || "") : ""}</div>
+        </td>
+        <td>
+          <div style="font-size:.8rem">${b.adresse || "—"}</div>
+          <div style="font-size:.6875rem;color:var(--text-muted)">${b.ville || ""}</div>
+        </td>
+        <td><span class="mono" style="font-size:.8rem">${b.puissance_kw} kW</span></td>
+        <td>${badgeStatut(b.statut)}</td>
+        <td><span class="mono" style="font-size:.75rem;color:var(--text-muted)">${maintenance}</span></td>
+        <td>
+          <div style="display:flex;gap:4px;flex-wrap:wrap">
+            ${b.statut === "en_panne" ? `
+            <button class="btn btn-secondary btn-sm" onclick="reparer(${b.id})"
+              style="font-size:.7rem;padding:3px 8px;gap:3px">
+              <i data-lucide="wrench" width="11" height="11"></i> Maintenance
+            </button>` : ""}
+            <button class="btn btn-primary btn-sm" onclick="mettreDispo(${b.id})"
+              style="font-size:.7rem;padding:3px 8px;gap:3px">
+              <i data-lucide="check-circle" width="11" height="11"></i> En service
+            </button>
+          </div>
+        </td>
+      </tr>`;
+  }).join("");
+  lucide.createIcons();
 }
+
+async function reparer(id)    { await changerStatut(id, "maintenance"); }
+async function mettreDispo(id){ await changerStatut(id, "disponible");  }
 
 async function changerStatut(id, statut) {
   try {
@@ -135,14 +265,17 @@ async function changerStatut(id, statut) {
       method: "PUT", headers: H, body: JSON.stringify({ statut })
     });
     if (r.ok) loadAlertes();
-    else alert("Erreur lors du changement de statut");
-  } catch { alert("Erreur réseau"); }
+    else {
+      const d = await r.json().catch(() => ({}));
+      alert(d.message || "Erreur lors du changement de statut.");
+    }
+  } catch { alert("Erreur réseau."); }
 }
 
 try {
   const s = io();
   s.on("statut_borne", () => loadAlertes());
-} catch {}
+} catch(e) {}
 
 loadAlertes();
 </script>

@@ -5,19 +5,68 @@
 
 {% block content %}
 
+<!-- ══ EN-TÊTE ══ -->
 <div class="page-header">
   <div>
     <div class="page-title">Prédiction IA</div>
     <div class="page-desc">Modèle RandomForest · Disponibilité des bornes</div>
   </div>
   <div style="display:flex;gap:8px;align-items:center">
-    <span style="background:var(--accent);color:#fff;font-size:.6875rem;font-weight:600;padding:3px 10px;border-radius:4px;font-family:'JetBrains Mono',monospace">RandomForest</span>
-    <span class="mono" style="font-size:.75rem;color:var(--text-muted)" id="model-acc">Accuracy : chargement…</span>
+    <span class="badge badge-maintenance" style="font-size:.7rem;padding:4px 10px">
+      <i data-lucide="brain-circuit" width="11" height="11"></i> RandomForest
+    </span>
+    <span style="font-size:.75rem;color:var(--text-muted)" id="model-acc">Accuracy : —</span>
   </div>
 </div>
 
-<!-- Info modèle -->
+<!-- ══ KPI modèle ══ -->
+<div class="kpi-grid" style="margin-bottom:12px">
+  <div class="kpi">
+    <div class="kpi-header">
+      <span class="kpi-label">Accuracy</span>
+      <div class="kpi-icon kpi-icon-success">
+        <i data-lucide="target" width="14" height="14"></i>
+      </div>
+    </div>
+    <div class="kpi-value" id="kpi-accuracy">—</div>
+    <div class="kpi-footer"><span>score global</span></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-header">
+      <span class="kpi-label">AUC-ROC</span>
+      <div class="kpi-icon kpi-icon-primary">
+        <i data-lucide="bar-chart-2" width="14" height="14"></i>
+      </div>
+    </div>
+    <div class="kpi-value" id="kpi-auc">—</div>
+    <div class="kpi-footer"><span>discrimination</span></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-header">
+      <span class="kpi-label">Arbres</span>
+      <div class="kpi-icon kpi-icon-warning">
+        <i data-lucide="git-branch" width="14" height="14"></i>
+      </div>
+    </div>
+    <div class="kpi-value">100</div>
+    <div class="kpi-footer"><span>estimateurs</span></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-header">
+      <span class="kpi-label">Données</span>
+      <div class="kpi-icon kpi-icon-primary">
+        <i data-lucide="database" width="14" height="14"></i>
+      </div>
+    </div>
+    <div class="kpi-value">~6 400</div>
+    <div class="kpi-footer"><span>lignes entraînement</span></div>
+  </div>
+</div>
+
+<!-- ══ Formulaire + Métriques ══ -->
 <div class="grid-2-1" style="margin-bottom:12px">
+
+  <!-- Formulaire de prédiction -->
   <div class="card">
     <div class="card-header">
       <div>
@@ -26,26 +75,28 @@
       </div>
     </div>
     <div class="card-body">
+
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-        <div>
-          <label style="font-size:.75rem;font-weight:500;color:var(--text-muted);display:block;margin-bottom:6px">Borne</label>
-          <select id="ml-borne" class="form-input" style="width:100%">
-            <option value="1">Borne 1</option>
-            <option value="2">Borne 2</option>
-            <option value="3">Borne 3</option>
+
+        <div class="form-group">
+          <label class="form-label" for="ml-borne">Borne</label>
+          <select id="ml-borne" class="form-input">
+            <option value="">Chargement…</option>
           </select>
         </div>
-        <div>
-          <label style="font-size:.75rem;font-weight:500;color:var(--text-muted);display:block;margin-bottom:6px">Heure</label>
-          <select id="ml-heure" class="form-input" style="width:100%">
+
+        <div class="form-group">
+          <label class="form-label" for="ml-heure">Heure</label>
+          <select id="ml-heure" class="form-input">
             {% for h in range(24) %}
             <option value="{{ h }}" {% if h == 8 %}selected{% endif %}>{{ '%02d'|format(h) }}:00</option>
             {% endfor %}
           </select>
         </div>
-        <div>
-          <label style="font-size:.75rem;font-weight:500;color:var(--text-muted);display:block;margin-bottom:6px">Jour de la semaine</label>
-          <select id="ml-jour" class="form-input" style="width:100%">
+
+        <div class="form-group">
+          <label class="form-label" for="ml-jour">Jour de la semaine</label>
+          <select id="ml-jour" class="form-input">
             <option value="0">Lundi</option>
             <option value="1">Mardi</option>
             <option value="2">Mercredi</option>
@@ -55,56 +106,95 @@
             <option value="6">Dimanche</option>
           </select>
         </div>
-        <div>
-          <label style="font-size:.75rem;font-weight:500;color:var(--text-muted);display:block;margin-bottom:6px">Mois</label>
-          <select id="ml-mois" class="form-input" style="width:100%">
-            <option value="1">Janvier</option><option value="2">Février</option>
-            <option value="3">Mars</option><option value="4">Avril</option>
-            <option value="5">Mai</option><option value="6" selected>Juin</option>
-            <option value="7">Juillet</option><option value="8">Août</option>
-            <option value="9">Septembre</option><option value="10">Octobre</option>
-            <option value="11">Novembre</option><option value="12">Décembre</option>
+
+        <div class="form-group">
+          <label class="form-label" for="ml-mois">Mois</label>
+          <select id="ml-mois" class="form-input">
+            <option value="1">Janvier</option>
+            <option value="2">Février</option>
+            <option value="3">Mars</option>
+            <option value="4">Avril</option>
+            <option value="5">Mai</option>
+            <option value="6" selected>Juin</option>
+            <option value="7">Juillet</option>
+            <option value="8">Août</option>
+            <option value="9">Septembre</option>
+            <option value="10">Octobre</option>
+            <option value="11">Novembre</option>
+            <option value="12">Décembre</option>
           </select>
         </div>
-      </div>
-      <button class="btn btn-primary" onclick="runML()" style="width:100%">Lancer la prédiction</button>
 
-      <!-- Résultat -->
-      <div id="ml-result" style="display:none;margin-top:16px;padding:16px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
-        <div id="ml-verdict" style="font-weight:600;font-size:.9rem;margin-bottom:12px"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
-          <div style="text-align:center">
-            <div style="font-size:.6875rem;color:var(--text-muted);margin-bottom:4px">Probabilité occupation</div>
-            <div class="mono" style="font-size:1.4rem;font-weight:700" id="ml-proba">—</div>
-          </div>
-          <div style="text-align:center">
-            <div style="font-size:.6875rem;color:var(--text-muted);margin-bottom:4px">Confiance</div>
-            <div class="mono" style="font-size:1.4rem;font-weight:700" id="ml-conf">—</div>
-          </div>
-          <div style="text-align:center">
-            <div style="font-size:.6875rem;color:var(--text-muted);margin-bottom:4px">Accuracy modèle</div>
-            <div class="mono" style="font-size:1.4rem;font-weight:700" id="ml-acc-val">—</div>
-          </div>
-        </div>
-        <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
-          <div id="ml-bar" style="height:100%;background:var(--accent);border-radius:3px;transition:width .4s;width:0%"></div>
-        </div>
-        <div style="font-size:.6875rem;color:var(--text-muted);margin-top:4px;text-align:right">Taux d'occupation prédit</div>
       </div>
+
+      <button class="btn btn-primary" id="btn-predict" onclick="runML()" style="width:100%;gap:6px">
+        <i data-lucide="cpu" width="14" height="14"></i>
+        <span id="btn-predict-label">Lancer la prédiction</span>
+        <div class="spinner" id="predict-spinner" style="display:none;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite"></div>
+      </button>
+
+      <!-- ══ Résultat ══ -->
+      <div id="ml-result" style="display:none;margin-top:16px">
+
+        <div id="ml-verdict-box" style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:8px;margin-bottom:14px">
+          <div id="ml-verdict-icon"></div>
+          <div>
+            <div id="ml-verdict" style="font-weight:600;font-size:.875rem"></div>
+            <div id="ml-verdict-sub" style="font-size:.75rem;margin-top:2px"></div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+          <div style="text-align:center;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
+            <div style="font-size:.6875rem;color:var(--text-muted);margin-bottom:6px">Probabilité occupation</div>
+            <div class="mono" style="font-size:1.375rem;font-weight:700" id="ml-proba">—</div>
+          </div>
+          <div style="text-align:center;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
+            <div style="font-size:.6875rem;color:var(--text-muted);margin-bottom:6px">Confiance</div>
+            <div class="mono" style="font-size:1.375rem;font-weight:700" id="ml-conf">—</div>
+          </div>
+          <div style="text-align:center;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px">
+            <div style="font-size:.6875rem;color:var(--text-muted);margin-bottom:6px">Accuracy modèle</div>
+            <div class="mono" style="font-size:1.375rem;font-weight:700" id="ml-acc-val">—</div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:.6875rem;color:var(--text-muted)">Taux d'occupation prédit</span>
+          <span class="mono" style="font-size:.6875rem;font-weight:600" id="ml-bar-pct">0%</span>
+        </div>
+        <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+          <div id="ml-bar" style="height:100%;background:var(--primary);border-radius:4px;transition:width .5s ease;width:0%"></div>
+        </div>
+
+      </div>
+
+      <!-- État erreur -->
+      <div id="ml-error" style="display:none;margin-top:16px">
+        <div class="empty-state" style="padding:20px 0">
+          <i data-lucide="cpu" width="28" height="28" style="color:var(--danger)"></i>
+          <p style="color:var(--danger)">Modèle non disponible</p>
+          <p style="font-size:.75rem;color:var(--text-muted);margin-top:4px">Lancez <code style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:.75rem">python ml/train_model.py</code></p>
+        </div>
+      </div>
+
     </div>
   </div>
 
   <!-- Métriques modèle -->
   <div class="card">
     <div class="card-header">
-      <div class="card-title">Métriques du modèle</div>
-      <div class="card-subtitle">Rapport d'évaluation</div>
+      <div>
+        <div class="card-title">Métriques du modèle</div>
+        <div class="card-subtitle">Rapport d'évaluation</div>
+      </div>
     </div>
     <div class="card-body">
-      <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;flex-direction:column;gap:8px">
+
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--bg);border-radius:6px;border:1px solid var(--border)">
           <span style="font-size:.8rem;color:var(--text-muted)">Accuracy</span>
-          <span class="mono" style="font-weight:700;color:var(--accent)" id="m-accuracy">—</span>
+          <span class="mono" style="font-weight:700;color:var(--primary)" id="m-accuracy">—</span>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--bg);border-radius:6px;border:1px solid var(--border)">
           <span style="font-size:.8rem;color:var(--text-muted)">AUC-ROC</span>
@@ -112,122 +202,191 @@
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--bg);border-radius:6px;border:1px solid var(--border)">
           <span style="font-size:.8rem;color:var(--text-muted)">Algorithme</span>
-          <span class="mono" style="font-weight:700">RandomForest</span>
+          <span class="badge badge-maintenance" style="font-size:.7rem">
+            <i data-lucide="brain-circuit" width="10" height="10"></i> RandomForest
+          </span>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--bg);border-radius:6px;border:1px solid var(--border)">
-          <span style="font-size:.8rem;color:var(--text-muted)">Arbres</span>
-          <span class="mono" style="font-weight:700">100</span>
+          <span style="font-size:.8rem;color:var(--text-muted)">Estimateurs</span>
+          <span class="mono" style="font-weight:700">100 arbres</span>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--bg);border-radius:6px;border:1px solid var(--border)">
           <span style="font-size:.8rem;color:var(--text-muted)">Données entraînement</span>
           <span class="mono" style="font-weight:700">~6 400 lignes</span>
         </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--bg);border-radius:6px;border:1px solid var(--border)">
+          <span style="font-size:.8rem;color:var(--text-muted)">Features</span>
+          <span class="mono" style="font-weight:700">5 variables</span>
+        </div>
+
       </div>
     </div>
+  </div>
+
+</div>
+
+<!-- ══ Importance des features ══ -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div class="card-title">Importance des variables</div>
+      <div class="card-subtitle">Contribution de chaque feature à la prédiction</div>
+    </div>
+  </div>
+  <div class="card-body">
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+
+      {% set features = [
+        ("Heure",            73.6, True),
+        ("Jour de la semaine", 9.9, False),
+        ("Mois",              9.1, False),
+        ("ID Borne",          5.8, False),
+        ("Est weekend",       1.6, False)
+      ] %}
+      {% for name, pct, primary in features %}
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+          <span style="font-size:.8rem;font-weight:500;color:var(--text)">{{ name }}</span>
+          <span class="mono" style="font-size:.75rem;font-weight:700;color:{% if primary %}var(--primary){% else %}var(--text-muted){% endif %}">{{ pct }}%</span>
+        </div>
+        <div style="height:7px;background:var(--border);border-radius:4px;overflow:hidden">
+          <div style="width:{{ pct }}%;height:100%;background:{% if primary %}var(--primary){% else %}#9CA3AF{% endif %};border-radius:4px;transition:width .4s ease"></div>
+        </div>
+      </div>
+      {% endfor %}
+
+    </div>
+
+    <div style="margin-top:16px;padding:12px 14px;background:#F0F9FF;border:1px solid #BAE6FD;border-radius:8px;display:flex;gap:10px;align-items:flex-start">
+      <i data-lucide="info" width="15" height="15" style="color:#0369A1;flex-shrink:0;margin-top:1px"></i>
+      <div>
+        <div style="font-size:.75rem;font-weight:600;color:#0369A1;margin-bottom:3px">Interprétation</div>
+        <div style="font-size:.75rem;color:#0C4A6E;line-height:1.6">
+          L'heure explique <strong>73.6%</strong> de la prédiction — les bornes sont davantage utilisées
+          en milieu de journée et en soirée (pic à 18h). Le modèle a correctement appris les patterns
+          temporels sans surapprentissage.
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
-<!-- Importance des features -->
-<div class="card" style="margin-bottom:12px">
-  <div class="card-header">
-    <div class="card-title">Importance des variables</div>
-    <div class="card-subtitle">Contribution de chaque feature à la prédiction</div>
-  </div>
-  <div class="card-body">
-    <div style="display:flex;flex-direction:column;gap:10px">
-      <div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-          <span style="font-size:.8rem;font-weight:500">Heure</span>
-          <span class="mono" style="font-size:.75rem;color:var(--accent);font-weight:700">73.6%</span>
-        </div>
-        <div style="height:6px;background:var(--border);border-radius:3px"><div style="width:73.6%;height:100%;background:var(--accent);border-radius:3px"></div></div>
-      </div>
-      <div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-          <span style="font-size:.8rem;font-weight:500">Jour de la semaine</span>
-          <span class="mono" style="font-size:.75rem;font-weight:700">9.9%</span>
-        </div>
-        <div style="height:6px;background:var(--border);border-radius:3px"><div style="width:9.9%;height:100%;background:#6B7280;border-radius:3px"></div></div>
-      </div>
-      <div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-          <span style="font-size:.8rem;font-weight:500">Mois</span>
-          <span class="mono" style="font-size:.75rem;font-weight:700">9.1%</span>
-        </div>
-        <div style="height:6px;background:var(--border);border-radius:3px"><div style="width:9.1%;height:100%;background:#6B7280;border-radius:3px"></div></div>
-      </div>
-      <div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-          <span style="font-size:.8rem;font-weight:500">ID Borne</span>
-          <span class="mono" style="font-size:.75rem;font-weight:700">5.8%</span>
-        </div>
-        <div style="height:6px;background:var(--border);border-radius:3px"><div style="width:5.8%;height:100%;background:#6B7280;border-radius:3px"></div></div>
-      </div>
-      <div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-          <span style="font-size:.8rem;font-weight:500">Est weekend</span>
-          <span class="mono" style="font-size:.75rem;font-weight:700">1.6%</span>
-        </div>
-        <div style="height:6px;background:var(--border);border-radius:3px"><div style="width:1.6%;height:100%;background:#6B7280;border-radius:3px"></div></div>
-      </div>
-    </div>
-    <div style="margin-top:14px;padding:10px 12px;background:#F0F9FF;border:1px solid #BAE6FD;border-radius:6px">
-      <div style="font-size:.75rem;color:#0369A1;font-weight:500">Interprétation</div>
-      <div style="font-size:.75rem;color:#0C4A6E;margin-top:3px">L'heure explique 73.6% de la prédiction — les bornes sont davantage utilisées en milieu de journée et en soirée (pic 18h). Le modèle a correctement appris les patterns temporels sans surapprentissage.</div>
-    </div>
-  </div>
-</div>
+<style>
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
 
 {% endblock %}
 
 {% block scripts %}
 <script>
-const TOKEN = localStorage.getItem("access_token") || "";
-const H = { "Content-Type": "application/json", "Authorization": `Bearer ${TOKEN}` };
+var TOKEN = localStorage.getItem("access_token") || "";
+var H = { "Content-Type": "application/json", "Authorization": "Bearer " + TOKEN };
 
-// Charger les bornes dynamiquement
+// ── Chargement des bornes ─────────────────────────────────────────────────
 async function loadBornes() {
   try {
-    const r = await fetch("/api/bornes/", { headers: H });
+    var r = await fetch("/api/bornes/", { headers: H });
     if (!r.ok) return;
-    const bornes = await r.json();
-    const sel = document.getElementById("ml-borne");
-    sel.innerHTML = bornes.map(b => `<option value="${b.id}">${b.nom || "Borne #" + b.id}</option>`).join("");
-  } catch {}
-}
-
-async function runML() {
-  const body = {
-    borne_id:     +document.getElementById("ml-borne").value,
-    heure:        +document.getElementById("ml-heure").value,
-    jour_semaine: +document.getElementById("ml-jour").value,
-    mois:         +document.getElementById("ml-mois").value,
-  };
-  try {
-    const r = await fetch("/api/predict/disponibilite", { method:"POST", headers:H, body:JSON.stringify(body) });
-    const d = await r.json();
-    const result = document.getElementById("ml-result");
-    result.style.display = "block";
-    const occ = d.prediction === "occupee";
-    const verdict = document.getElementById("ml-verdict");
-    verdict.textContent = occ ? "⚠ Borne probablement OCCUPÉE à cette heure" : "✓ Borne probablement DISPONIBLE à cette heure";
-    verdict.style.color = occ ? "var(--danger)" : "#15803D";
-    document.getElementById("ml-proba").textContent   = Math.round(d.probabilite_occupation * 100) + "%";
-    document.getElementById("ml-conf").textContent    = d.confiance || "—";
-    document.getElementById("ml-acc-val").textContent = Math.round((d.modele_accuracy || 0) * 100) + "%";
-    document.getElementById("ml-bar").style.width     = (d.probabilite_occupation * 100) + "%";
-    document.getElementById("ml-bar").style.background = occ ? "var(--danger)" : "#15803D";
-    document.getElementById("model-acc").textContent  = "Accuracy : " + Math.round((d.modele_accuracy || 0) * 100) + "%";
-    document.getElementById("m-accuracy").textContent = Math.round((d.modele_accuracy || 0) * 100) + "%";
-    document.getElementById("m-auc").textContent = d.auc_roc ? d.auc_roc.toFixed(3) : "0.753";
-  } catch {
-    const result = document.getElementById("ml-result");
-    result.style.display = "block";
-    document.getElementById("ml-verdict").textContent = "Modèle non disponible — lancez python ml/train_model.py";
-    document.getElementById("ml-verdict").style.color = "var(--danger)";
+    var bornes = await r.json();
+    var sel = document.getElementById("ml-borne");
+    if (!bornes.length) {
+      sel.innerHTML = '<option value="">Aucune borne disponible</option>';
+      return;
+    }
+    sel.innerHTML = bornes.map(function(b) {
+      return '<option value="' + b.id + '">' + (b.nom || "Borne #" + b.id) + '</option>';
+    }).join("");
+  } catch(e) {
+    document.getElementById("ml-borne").innerHTML = '<option value="">Erreur de chargement</option>';
   }
 }
 
+// ── Prédiction ────────────────────────────────────────────────────────────
+async function runML() {
+  var btn     = document.getElementById("btn-predict");
+  var label   = document.getElementById("btn-predict-label");
+  var spinner = document.getElementById("predict-spinner");
+  var result  = document.getElementById("ml-result");
+  var error   = document.getElementById("ml-error");
+
+  btn.disabled          = true;
+  label.textContent     = "Analyse en cours…";
+  spinner.style.display = "inline-block";
+  result.style.display  = "none";
+  error.style.display   = "none";
+  lucide.createIcons();
+
+  var body = {
+    borne_id:     parseInt(document.getElementById("ml-borne").value),
+    heure:        parseInt(document.getElementById("ml-heure").value),
+    jour_semaine: parseInt(document.getElementById("ml-jour").value),
+    mois:         parseInt(document.getElementById("ml-mois").value)
+  };
+
+  try {
+    var r = await fetch("/api/predict/disponibilite", {
+      method: "POST", headers: H, body: JSON.stringify(body)
+    });
+    var d = await r.json();
+
+    var occ   = d.prediction === "occupee";
+    var proba = Math.round((d.probabilite_occupation || 0) * 100);
+    var acc   = Math.round((d.modele_accuracy || 0) * 100);
+    var auc   = d.auc_roc ? d.auc_roc.toFixed(3) : "0.753";
+
+    // Verdict
+    var box = document.getElementById("ml-verdict-box");
+    var ico = document.getElementById("ml-verdict-icon");
+    if (occ) {
+      box.style.cssText += "background:#FEF2F2;border:1px solid #FECACA;";
+      ico.innerHTML = '<i data-lucide="alert-triangle" width="18" height="18" style="color:#B91C1C"></i>';
+      document.getElementById("ml-verdict").style.color = "#B91C1C";
+      document.getElementById("ml-verdict").textContent = "Borne probablement OCCUPÉE à cette heure";
+      document.getElementById("ml-verdict-sub").style.color = "#991B1B";
+      document.getElementById("ml-verdict-sub").textContent = "Probabilité d'occupation : " + proba + "%";
+    } else {
+      box.style.cssText += "background:#F0FDF4;border:1px solid #BBF7D0;";
+      ico.innerHTML = '<i data-lucide="check-circle" width="18" height="18" style="color:#15803D"></i>';
+      document.getElementById("ml-verdict").style.color = "#15803D";
+      document.getElementById("ml-verdict").textContent = "Borne probablement DISPONIBLE à cette heure";
+      document.getElementById("ml-verdict-sub").style.color = "#166534";
+      document.getElementById("ml-verdict-sub").textContent = "Probabilité d'occupation : " + proba + "%";
+    }
+
+    // Métriques
+    document.getElementById("ml-proba").textContent   = proba + "%";
+    document.getElementById("ml-proba").style.color   = occ ? "#B91C1C" : "#15803D";
+    document.getElementById("ml-conf").textContent    = d.confiance || "Haute";
+    document.getElementById("ml-acc-val").textContent = acc + "%";
+
+    // Barre
+    document.getElementById("ml-bar").style.width      = proba + "%";
+    document.getElementById("ml-bar").style.background = occ ? "#B91C1C" : "#15803D";
+    document.getElementById("ml-bar-pct").textContent  = proba + "%";
+
+    // KPI header + métriques colonne droite
+    document.getElementById("model-acc").textContent  = "Accuracy : " + acc + "%";
+    document.getElementById("kpi-accuracy").textContent = acc + "%";
+    document.getElementById("kpi-auc").textContent      = auc;
+    document.getElementById("m-accuracy").textContent   = acc + "%";
+    document.getElementById("m-auc").textContent        = auc;
+
+    result.style.display = "block";
+    lucide.createIcons();
+
+  } catch(e) {
+    error.style.display = "block";
+    lucide.createIcons();
+  } finally {
+    btn.disabled          = false;
+    label.textContent     = "Lancer la prédiction";
+    spinner.style.display = "none";
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
 loadBornes();
 </script>
 {% endblock %}
