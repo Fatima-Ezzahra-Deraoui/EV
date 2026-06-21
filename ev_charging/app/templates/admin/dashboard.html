@@ -353,7 +353,7 @@ async function loadStats() {
     document.getElementById("kpi-occupees").textContent  = d.bornes.occupees;
     document.getElementById("kpi-pannes").textContent    = d.bornes.en_panne + d.bornes.maintenance;
     document.getElementById("kpi-revenu").textContent    =
-      d.energie.revenu_total_eur.toLocaleString("fr-FR", {minimumFractionDigits:2}) + " €";
+      d.energie.revenu_total_eur.toLocaleString("fr-FR", {minimumFractionDigits:2}) + " MAD";
     document.getElementById("kpi-energie").textContent   = d.energie.total_kwh.toLocaleString("fr-FR");
     document.getElementById("nb-dispo").textContent      = d.bornes.disponibles;
 
@@ -379,7 +379,7 @@ async function loadStats() {
     document.getElementById("kpi-dispo-delta").textContent = "2";
     document.getElementById("kpi-occupees").textContent  = "1";
     document.getElementById("kpi-pannes").textContent    = "1";
-    document.getElementById("kpi-revenu").textContent    = "2 847,00 €";
+    document.getElementById("kpi-revenu").textContent    = "2 847,00 MAD";
     document.getElementById("kpi-energie").textContent   = "9 490";
     document.getElementById("last-refresh").textContent  = "mode démo";
     document.getElementById("alert-panne").style.display = "flex";
@@ -413,7 +413,7 @@ async function loadBornes() {
         </td>
         <td style="font-size:.75rem;color:var(--text-muted)">${b.ville||'—'}</td>
         <td><span class="mono" style="font-size:.8rem">${b.puissance_kw} kW</span></td>
-        <td><span class="mono" style="font-size:.8rem">${b.prix_kwh} €/kWh</span></td>
+        <td><span class="mono" style="font-size:.8rem">${b.prix_kwh} MAD/kWh</span></td>
         <td>${badgeStatut(b.statut)}</td>
       </tr>
     `).join("");
@@ -424,7 +424,7 @@ async function loadBornes() {
         <td><div style="font-weight:600;font-size:.8rem">Borne A1</div><div style="font-size:.6875rem;color:var(--text-muted)">Centre Commercial</div></td>
         <td style="font-size:.75rem;color:var(--text-muted)">Casablanca</td>
         <td><span class="mono" style="font-size:.8rem">22 kW</span></td>
-        <td><span class="mono" style="font-size:.8rem">0.30 €/kWh</span></td>
+        <td><span class="mono" style="font-size:.8rem">0.30 MAD/kWh</span></td>
         <td>${badgeStatut('disponible')}</td>
       </tr>
       <tr>

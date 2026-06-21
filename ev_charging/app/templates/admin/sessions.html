@@ -178,7 +178,7 @@ function updateKPIs() {
   document.getElementById("kpi-energie").textContent =
     energie.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
   document.getElementById("kpi-revenu").textContent  =
-    revenu.toLocaleString("fr-FR", { minimumFractionDigits: 2 }) + " €";
+    revenu.toLocaleString("fr-FR", { minimumFractionDigits: 2 }) + " MAD";
 }
 
 // ── Filtre & rendu ────────────────────────────────────────────────────────
@@ -215,7 +215,7 @@ function renderTable(data) {
       <td><span class="mono" style="font-size:.75rem">${s.energie_kwh ? parseFloat(s.energie_kwh).toFixed(2) + " kWh" : "—"}</span></td>
       <td>
         <span style="font-weight:600;font-size:.8rem;color:${s.montant_eur ? "var(--text)" : "var(--text-muted)"}">
-          ${s.montant_eur ? parseFloat(s.montant_eur).toLocaleString("fr-FR",{minimumFractionDigits:2}) + " €" : "—"}
+          ${s.montant_eur ? parseFloat(s.montant_eur).toLocaleString("fr-FR",{minimumFractionDigits:2}) + " MAD" : "—"}
         </span>
       </td>
       <td>${badgeSession(s.statut)}</td>

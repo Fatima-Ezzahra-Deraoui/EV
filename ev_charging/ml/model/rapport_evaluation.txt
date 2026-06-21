@@ -2,30 +2,30 @@
 RAPPORT D'ÉVALUATION — Prédiction Disponibilité des Bornes EVCharge
 ======================================================================
   Version modèle   : 2.0
-  Date             : 20/06/2026 03:17
+  Date             : 20/06/2026 19:29
   Algorithme       : RandomForestClassifier
   Paramètres       : {'n_estimators': 100, 'max_depth': 10, 'min_samples_split': 5, 'min_samples_leaf': 2, 'class_weight': 'balanced', 'random_state': 42, 'n_jobs': -1}
-  Dataset          : 206032 lignes
+  Dataset          : 206671 lignes
   Features         : ['borne_id', 'heure', 'jour_semaine', 'est_weekend', 'est_heure_pointe', 'mois']
   Split            : 80% train / 20% test
 
 MÉTRIQUES
 ----------------------------------------
-  Accuracy         : 87.8%
-  AUC-ROC          : 0.9563
-  Precision        : 0.0694
-  Recall           : 0.9160
-  F1-Score         : 0.1290
-  CV 5-fold        : 87.5% ± 0.7%
+  Accuracy         : 97.8%
+  AUC-ROC          : 0.9967
+  Precision        : 0.3033
+  Recall           : 0.9802
+  F1-Score         : 0.4632
+  CV 5-fold        : 97.9% ± 0.2%
 
 IMPORTANCE DES FEATURES
 ----------------------------------------
-  heure            :  37.8%  ███████████████
-  mois             :  22.2%  ████████
-  jour_semaine     :  17.2%  ██████
-  borne_id         :  14.9%  █████
-  est_weekend      :   7.1%  ██
-  est_heure_pointe :   0.7%  
+  mois             :  61.3%  ████████████████████████
+  heure            :  21.0%  ████████
+  jour_semaine     :   7.2%  ██
+  borne_id         :   5.9%  ██
+  est_weekend      :   4.3%  █
+  est_heure_pointe :   0.3%  
 
 INTERPRÉTATION
 ----------------------------------------
